@@ -8,7 +8,7 @@
 
 ## 简单的日志服务
 
-在客户端与我们提供的服务之间，请求和响应是用 JSON 来表示的，并通过 HTTP 来传输。接下来会构建一个简单的提交日志服务，现在只需要知道提交日志就是一系列按时间排序且只支持追加写入的记录。
+在客户端与我们提供的服务之间，请求和响应数据用 JSON 格式来表示，并通过 HTTP 传输。接下来会构建一个简单的提交日志服务，现在我们只需要知道提交日志就是一系列按时间排序且只支持追加写入的记录。
 
 
 
@@ -16,13 +16,13 @@
 
 
 
-接下来构建 JSON/HTTP 服务。我们需要为每个 API 编写一个 `func(http.ResponseWriter, *http.Request)` 类型的处理函数。处理函数中通常包含以下 3 步：
+接下来构建 JSON/HTTP 服务。具体来说，我们需要为每个 API 编写一个 `func(http.ResponseWriter, *http.Request)` 类型的处理函数。处理函数中通常包含以下 3 步：
 
-1. 将请求反序列化为 Go 结构体
+1. 将请求反序列化为 Go 语言对象
 2. 处理请求获得结果
 3. 将序列化后的结果作为响应
 
-我们在 `./internal/server/http.go` 中定义了 `handleWrite` 和 `handleRead` 两个函数，分别用来处理记录的写入和读取；然后使用 `gorilla/mux` 库为不同的方法和路径注册对应的处理函数；最后在 `./cmd/server/main.go` 中调用服务器的 `ListenAndServe` 方法。
+我们在 `./internal/server/http.go` 中定义了 `handleWrite` 和 `handleRead` 两个函数，分别用来处理记录的写入和读取；然后使用 `gorilla/mux` 库为不同的方法和路径注册了对应的处理函数；最后在 `./cmd/server/main.go` 中调用了服务器的 `ListenAndServe` 方法。
 
 ## JSON 以及 Go 语言的 `encoding/json` 包
 
@@ -99,14 +99,14 @@ console.log(obj.count)  // 42
 console.log(obj.result) // true
 
 // '[3,"false",false]'
-console.log(JSON.stringify([new Number(3), new String('false'), new Boolean(false)]),)
+console.log(JSON.stringify([new Number(3), new String('false'), new Boolean(false)]))
 ```
 
-虽然 JSON 使用基于 JavaScript 的语法来描述数据对象，但它仍是一种独立于平台和语言的数据表示和交换格式。比如，Go 语言的 [`encoding/json`](https://pkg.go.dev/encoding/json) 包就提供了将 Go 语言对象序列化为 JSON 字符串和将 JSON 字符串反序列化为 Go 语言对象的方法，其中的核心是 [`Marshal`](https://pkg.go.dev/encoding/json#Marshal) 和 [`Unmarshal`](https://pkg.go.dev/encoding/json#Unmarshal) 函数。这两个函数的文档详细描述了 Go 的值和 JSON 的值的对应关系。 一个需要特别注意的地方是 Go 会将 `[]byte` 类型的值编码为一个使用 `base64` 编码（在 [RFC 4648](https://datatracker.ietf.org/doc/html/rfc4648) 中描述）的字符串。
+虽然 JSON 使用基于 JavaScript 的语法来描述数据对象，但它仍是一种独立于平台和语言的数据表示和交换格式。比如，Go 语言的 [`encoding/json`](https://pkg.go.dev/encoding/json) 包就提供了将 Go 语言对象序列化为 JSON 字符串和将 JSON 字符串反序列化为 Go 语言对象的方法，其中的核心是 [`Marshal`](https://pkg.go.dev/encoding/json#Marshal) 和 [`Unmarshal`](https://pkg.go.dev/encoding/json#Unmarshal) 函数。这两个函数的文档详细描述了 Go 语言的值和 JSON 的值的对应关系。 一个需要特别注意的地方是 Go 会将 `[]byte` 类型的值编码为一个使用 `base64` 编码（在 [RFC 4648](https://datatracker.ietf.org/doc/html/rfc4648) 中描述）的字符串。
 
 ## 测试
 
-现在来测试下我们的服务。使用 curl 命令发送 POST 请求添加一条记录然后再发送 GET 请求来查询：
+现在来测试下我们的服务。使用 curl 命令发送 POST 请求添加一条记录，然后再发送 GET 请求来查询：
 
 ```bash
 # 字符串 "TGV0J3MgR28gIzEK" 是 "My First Commit" 的 base64 编码表示
