@@ -28,69 +28,81 @@
 
 （以下内容来自 [MDN](https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Objects/JSON) 文档）
 
-JSON 的全称是 JavaScript Object Notation（JavaScript 对象表示法），用于以文本的形式表示结构化数据。它最常见的用途是在 Web 应用中表示和传输数据。JSON 的 ABNF 文法表示如下（来自 [RFC 8259](https://datatracker.ietf.org/doc/html/rfc8259)）：
+JSON 的全称是 JavaScript Object Notation（JavaScript 对象表示法），用于以文本的形式表示结构化数据。它最常见的用途是在 Web 应用中表示和传输数据。JSON 的 ABNF 文法表示如下（在 [RFC 8259](https://datatracker.ietf.org/doc/html/rfc8259) 中描述）：
 
 ```
 // JSON 字符串
-JSON-text = ws value ws
+JSON-text       = ws value ws
 
 // 空白符
 ws              = *(
-                  %x20 /              ; Space
-                  %x09 /              ; Horizontal tab
-                  %x0A /              ; Line feed or New line
-                  %x0D )              ; Carriage return
+                  %x20 /               ; Space
+                  %x09 /               ; Horizontal tab
+                  %x0A /               ; Line feed or New line
+                  %x0D )               ; Carriage return
 
 // 值
 value           = false / null / true / object / array / number / string
-false           = %x66.61.6c.73.65    ; false
-null            = %x6e.75.6c.6c       ; null
-true            = %x74.72.75.65       ; true
+false           = %x66.61.6c.73.65     ; false
+null            = %x6e.75.6c.6c        ; null
+true            = %x74.72.75.65        ; true
 
 // 对象
 object          = begin-object [ member *( value-separator member ) ] end-object
-begin-object    = ws %x7B ws          ; { left curly bracket
+begin-object    = ws %x7B ws           ; { left curly bracket
 member          = string name-separator value
-name-separator  = ws %x3A ws          ; : colon
-value-separator = ws %x2C ws          ; , comma
-end-object      = ws %x7D ws          ; } right curly bracket
+name-separator  = ws %x3A ws           ; : colon
+value-separator = ws %x2C ws           ; , comma
+end-object      = ws %x7D ws           ; } right curly bracket
 
 // 数组
 array           = begin-array [ value *( value-separator value ) ] end-array
-begin-array     = ws %x5B ws          ; [ left square bracket
-end-array       = ws %x5D ws          ; ] right square bracket
+begin-array     = ws %x5B ws           ; [ left square bracket
+end-array       = ws %x5D ws           ; ] right square bracket
 
 // 数字
-number         = [ minus ] int [ frac ] [ exp ]
-minus          = %x2D                 ; -
-int            = zero / ( digit1-9 *DIGIT )
-zero           = %x30                 ; 0
-digit1-9       = %x31-39              ; 1-9
-frac           = decimal-point 1*DIGIT
-decimal-point  = %x2E                 ; .
-exp            = e [ minus / plus ] 1*DIGIT
-e              = %x65 / %x45          ; e E
-plus           = %x2B                 ; +    
+number          = [ minus ] int [ frac ] [ exp ]
+minus           = %x2D                 ; -
+int             = zero / ( digit1-9 *DIGIT )
+zero            = %x30                 ; 0
+digit1-9        = %x31-39              ; 1-9
+frac            = decimal-point 1*DIGIT
+decimal-point   = %x2E                 ; .
+exp             = e [ minus / plus ] 1*DIGIT
+e               = %x65 / %x45          ; e E
+plus            = %x2B                 ; +    
 
 // 字符串
-string         = quotation-mark *char quotation-mark
-quotation-mark = %x22                 ; "
-char           = unescaped /
-                 escape (
-                      %x22 /          ; "    quotation mark  U+0022
-                      %x5C /          ; \    reverse solidus U+005C
-                      %x2F /          ; /    solidus         U+002F
-                      %x62 /          ; b    backspace       U+0008
-                      %x66 /          ; f    form feed       U+000C
-                      %x6E /          ; n    line feed       U+000A
-                      %x72 /          ; r    carriage return U+000D
-                      %x74 /          ; t    tab             U+0009
-                      %x75 4HEXDIG )  ; uXXXX                U+XXXX
-unescaped      = %x20-21 / %x23-5B / %x5D-10FFFF
-escape         = %x5C                 ; \
+string          = quotation-mark *char quotation-mark
+quotation-mark  = %x22                 ; "
+char            = unescaped /
+                  escape (
+                      %x22 /           ; "    quotation mark  U+0022
+                      %x5C /           ; \    reverse solidus U+005C
+                      %x2F /           ; /    solidus         U+002F
+                      %x62 /           ; b    backspace       U+0008
+                      %x66 /           ; f    form feed       U+000C
+                      %x6E /           ; n    line feed       U+000A
+                      %x72 /           ; r    carriage return U+000D
+                      %x74 /           ; t    tab             U+0009
+                      %x75 4HEXDIG )   ; uXXXX                U+XXXX
+unescaped       = %x20-21 / %x23-5B / %x5D-10FFFF
+escape          = %x5C                 ; \
 ```
 
-当 JSON 以字符串形式存在时，可以用于在网络中传输数据。如果我们想要访问其中的数据，就需要把它转换成一个对象。JavaScript 语言提供了一个全局的 `JSON` 对象，它有两个方法来做这种转换。
+当 JSON 以字符串形式存在时，可以用于在网络中传输数据。如果我们想要访问其中的数据，就需要把它转换成一个对象。JavaScript 提供了一个全局的 `JSON` 对象，它有两个静态方法 `parse` 和 `stringify` 来做这种转换，就像下面这样：
+
+```javascript
+const json = '{"result":true, "count":42}'
+const obj  = JSON.parse(json)
+console.log(obj.count)  // 42
+console.log(obj.result) // true
+
+// '[3,"false",false]'
+console.log(JSON.stringify([new Number(3), new String('false'), new Boolean(false)]),)
+```
+
+虽然 JSON 使用基于 JavaScript 的语法来描述数据对象，但它仍是一种独立于平台和语言的数据表示和交换格式。比如，Go 语言的 [`encoding/json`](https://pkg.go.dev/encoding/json) 包就提供了将 Go 语言对象序列化为 JSON 字符串和将 JSON 字符串反序列化为 Go 语言对象的方法，其中的核心是 [`Marshal`](https://pkg.go.dev/encoding/json#Marshal) 和 [`Unmarshal`](https://pkg.go.dev/encoding/json#Unmarshal) 函数。这两个函数的文档详细描述了 Go 的值和 JSON 的值的对应关系。 一个需要特别注意的地方是 Go 会将 `[]byte` 类型的值编码为一个使用 `base64` 编码（在 [RFC 4648](https://datatracker.ietf.org/doc/html/rfc4648) 中描述）的字符串。
 
 # Part 2 - Network
 
