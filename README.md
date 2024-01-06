@@ -1,5 +1,7 @@
 # DCLS (Distributed Commit Log Service)
 
+[toc]
+
 构建一个分布式的提交日志服务。
 
 很多分布式服务的学习资源都是具体的代码，而另外一些则陷于抽象的理论。本项目来自于 *Distributed Services with Go* 这本书，希望能在理论与实践之间取得一种平衡。
@@ -120,6 +122,81 @@ $ curl -X GET localhost:8080 -d '{"offset": 0}'
 ```
 
 curl 命令行工具用于在客户端和服务器之间传输数据。它的完整描述见 [这里](https://man7.org/linux/man-pages/man1/curl.1.html) 。一些最常见的用法见 [Curl Cookbook](https://catonmat.net/cookbooks/curl) 。
+
+## 使用 Protocol Buffers 数据交换格式
+
+JSON 适用于服务器不需要控制客户端和构建公共 API 的场景，它的另一个优点在于它是人类可读的形式。但是在构建内部 API 或者需要控制客户端时，我们可以使用其他的数据交换格式，以做到更快的响应、更多的特性和更少的 bug 。本部分对 protobuf 的使用做简要的介绍，详细内容会在 Part 2 中使用 gRPC 时描述。
+
+
+
+根据 [官网](https://protobuf.dev/) 的介绍，protobuf 是一种语言和平台无关的用来序列化结构化数据的数据格式。与 XML 和 JSON 相比，它拥有更多的优点，包括 Consistent schemas、Versioning for free、Less boilerplate、Extensibility、Language agnosticism 和 High performance 。官网的 [Overview](https://protobuf.dev/overview/) 页提供了更加详细的介绍。
+
+
+
+使用 protobuf 的第一步是安装 protobuf 编译器，它用来编译 `.proto` 文件。最简单的方法是在 [Github Release](https://github.com/protocolbuffers/protobuf/releases) 页下载合适的版本，比如在 Linux 系统下可以使用下面的几条命令来完成安装：
+
+```bash
+$ wget https://github.com/protocolbuffers/protobuf/releases/download/v25.1/protoc-25.1-linux-x86_64.zip
+$ rm -rf /usr/local/protobuf && unzip protoc-25.1-linux-x86_64.zip -d /usr/local/protobuf
+$ echo 'export PATH=$PATH:/usr/local/protobuf/bin' >> $HOME/.profile
+$ source $HOME/.profile
+# 然后输入 protoc --version 查看编译器版本信息
+# 没有错误即安装成功
+$ protoc --version
+libprotoc 25.1
+```
+
+
+
+接下来就可以编写 `.proto` 文件将上边的 `Record` 类型转换成对应的 protobuf 消息。按照惯例，我们将 protobuf 文件放在 `api` 目录下。在 `./api/v1` 目录下新建 `log.proto` 文件，写入如下内容：
+
+```protobuf
+syntax = "proto3";
+
+package log.v1;
+option go_package = "github.com/youngfr/api/log_v1";
+
+message Record {
+    bytes value = 1;
+    uint64 offset = 2;
+}
+```
+
+关于 protobuf 语法的详细解释见 [proto3 Language Guide](https://protobuf.dev/programming-guides/proto3/) 。在编写好 `.proto` 文件后，为了将其编译为特定的语言，还需要安装对应语言的运行时。对于 Go 语言，可以使用下面这条命令来安装：
+
+```
+go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+```
+
+这里要注意，编译器插件 protoc-gen-go 会安装到 `GOBIN` 变量对应的路径下，该路径必须被添加到 `PATH` 环境变量：
+
+```bash
+# 查看 GOBIN 的值
+$ go env GOBIN
+# 如果 GOBIN 没有设置
+# 将其设置为 GOPATH/bin 路径
+(optional) $ go env -w GOBIN=GOPATH/bin
+# 将 GOBIN 添加到 PATH 环境变量
+$ echo 'export PATH=$PATH:/home/myl/go/bin' >> $HOME/.profile
+$ source $HOME/.profile
+```
+
+
+
+最后在项目的根目录下新建一个 Makefile 并在其中输入以下内容：
+
+```makefile
+compile:
+	protoc api/v1/*.proto \
+		--go_out=. \
+		--go_opt=paths=source_relative \
+		--proto_path=.
+
+test:
+	go test -race ./...
+```
+
+编译参数详见 [Go Generated Code Guide - Compiler Invocation](https://protobuf.dev/reference/go/go-generated/#invocation) 中的解释。此时运行 `make` 命令就可以在 `./api/v1` 路径下看到生成的 `log.pb.go` 文件。
 
 # Part 2 - Network
 
