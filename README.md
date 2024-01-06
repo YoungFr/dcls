@@ -12,11 +12,7 @@
 
 在客户端与我们提供的服务之间，请求和响应数据用 JSON 格式来表示，并通过 HTTP 传输。接下来会构建一个简单的提交日志服务，现在我们只需要知道提交日志就是一系列按时间排序且只支持追加写入的记录。
 
-
-
 我们在 `./internal/server/log.go` 中定义了一个 `Log` 结构体来表示日志，它是 `Record` 结构体的切片，并受到互斥锁的保护。而一个 `Record` 结构体表示一条具体的记录，记录的内容可以是任意类型，成员 `Offset` 表示的是该条记录在 `Log.records` 中的下标。日志结构体的 `Append` 方法用于追加一条记录，而 `Read` 方法则用于根据下标读取某条记录。
-
-
 
 接下来构建 JSON/HTTP 服务。具体来说，我们需要为每个 API 编写一个 `func(http.ResponseWriter, *http.Request)` 类型的处理函数。处理函数中通常包含以下 3 步：
 
@@ -125,15 +121,11 @@ curl 命令行工具用于在客户端和服务器之间传输数据。它的完
 
 ## 使用 Protocol Buffers 数据交换格式
 
-JSON 适用于服务器不需要控制客户端和构建公共 API 的场景，它的另一个优点在于它是人类可读的形式。但是在构建内部 API 或者需要控制客户端时，我们可以使用其他的数据交换格式，以做到更快的响应、更多的特性和更少的 bug 。本部分对 protobuf 的使用做简要的介绍，详细内容会在 Part 2 中使用 gRPC 时描述。
-
-
+JSON 适用于服务器不需要控制客户端和构建公共 API 时的场景，它的另一个优点在于它是人类可读的形式。但是在构建内部 API 或者需要控制客户端时，我们可以使用其他的数据交换格式，以做到更快的响应、更多的特性和更少的 bug 。本部分对 protobuf 的使用做简要的介绍，详细内容会在 Part 2 中使用 gRPC 时描述。
 
 根据 [官网](https://protobuf.dev/) 的介绍，protobuf 是一种语言和平台无关的用来序列化结构化数据的数据格式。与 XML 和 JSON 相比，它拥有更多的优点，包括 Consistent schemas、Versioning for free、Less boilerplate、Extensibility、Language agnosticism 和 High performance 。官网的 [Overview](https://protobuf.dev/overview/) 页提供了更加详细的介绍。
 
-
-
-使用 protobuf 的第一步是安装 protobuf 编译器，它用来编译 `.proto` 文件。最简单的方法是在 [Github Release](https://github.com/protocolbuffers/protobuf/releases) 页下载合适的版本，比如在 Linux 系统下可以使用下面的几条命令来完成安装：
+使用 protobuf 的第一步是安装 protobuf 编译器，它用来编译 `.proto` 文件。最简单的安装方法是在 [GitHub Release](https://github.com/protocolbuffers/protobuf/releases) 页下载合适的版本进行安装，比如在 Linux 系统下可以使用下面的几条命令来完成安装：
 
 ```bash
 $ wget https://github.com/protocolbuffers/protobuf/releases/download/v25.1/protoc-25.1-linux-x86_64.zip
@@ -145,8 +137,6 @@ $ source $HOME/.profile
 $ protoc --version
 libprotoc 25.1
 ```
-
-
 
 接下来就可以编写 `.proto` 文件将上边的 `Record` 类型转换成对应的 protobuf 消息。按照惯例，我们将 protobuf 文件放在 `api` 目录下。在 `./api/v1` 目录下新建 `log.proto` 文件，写入如下内容：
 
@@ -181,8 +171,6 @@ $ echo 'export PATH=$PATH:/home/myl/go/bin' >> $HOME/.profile
 $ source $HOME/.profile
 ```
 
-
-
 最后在项目的根目录下新建一个 Makefile 并在其中输入以下内容：
 
 ```makefile
@@ -197,6 +185,20 @@ test:
 ```
 
 编译参数详见 [Go Generated Code Guide - Compiler Invocation](https://protobuf.dev/reference/go/go-generated/#invocation) 中的解释。此时运行 `make` 命令就可以在 `./api/v1` 路径下看到生成的 `log.pb.go` 文件。
+
+## 编写一个日志包
+
+本节编写一个日志包作为后续服务的基础，一些术语的定义如下：
+
+> Record - the data stored in our log.
+>
+> Store - the file we store records in.
+>
+> Index - the file we store index entries in.
+>
+> Segment - the abstraction that ties a store and an index together.
+>
+> Log - the abstraction that ties all the segments together.
 
 # Part 2 - Network
 
