@@ -200,6 +200,8 @@ test:
 >
 > Log - the abstraction that ties all the segments together.
 
+一个 `store` 结构体用来存放一条一条的记录，详见 `./internal/log/store.go` 中的注释。
+
 # Part 2 - Network
 
 TODO
