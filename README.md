@@ -210,7 +210,7 @@ test:
 
 一个 `store` 结构体用来存放一条一条的记录，详见 `./internal/log/store.go` 中的注释。
 
-一个 `index` 结构体用来保存索引，它的实现使用了内存映射文件，详见 [`mmap`](./mds/mmap.md) 中的介绍。
+一个 `index` 结构体用来保存索引，它的实现使用了内存映射文件，详见 [mmap](./mds/mmap.md) 中的介绍。
 
 # Part 2 - Network
 

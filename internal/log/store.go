@@ -20,8 +20,7 @@ func newStore(f *os.File) (*store, error) {
 	if err != nil {
 		return nil, err
 	}
-	// 文件当前的大小
-	// 单位是字节
+	// 获取文件当前的大小，单位是字节
 	size := uint64(finfo.Size())
 	return &store{
 		File: f,
@@ -34,7 +33,7 @@ func newStore(f *os.File) (*store, error) {
 var order = binary.BigEndian
 
 // 表示一条记录的长度的数字所占用的字节数
-const lenSize = 8
+const lenSize = 8 // sizeof(uint64)
 
 // 将一条记录追加写入文件的末尾
 // 写入时会先写入记录的长度再写入记录的内容
