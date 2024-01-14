@@ -212,6 +212,8 @@ test:
 
 一个 `index` 结构体用来保存索引，它的实现使用了内存映射文件，详见 [mmap](./mds/mmap.md) 中的介绍。
 
+一个 `segment` 结构体用来同时保存记录和索引，详见 `./internal/log/segment.go` 中的注释。
+
 # Part 2 - Network
 
 TODO

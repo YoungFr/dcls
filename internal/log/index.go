@@ -72,6 +72,7 @@ var errInvalidRelativeOffset = errors.New("invalid relative offset")
 //
 // 将相对下标既作为输入又作为输出的原因是
 // 当输入为 -1 时返回的是当前最后一个索引项对应的相对下标
+// 也就是说可以用 Read(-1) 来获取当前索引项的数目
 //
 // 因为要接收负数作为输入，所以 refOffInput 的类型为
 // 能容纳所有 uint32 数字的有符号整型即 int64 类型
