@@ -4,7 +4,11 @@
 
 构建一个分布式的提交日志服务。
 
-很多分布式服务的学习资源都是具体的代码，而另外一些则陷于抽象的理论。本项目来自于 *Distributed Services with Go* 这本书，希望能在理论与实践之间取得一种平衡。
+很多分布式服务的学习资源都是具体的代码，而另外一些则陷于抽象的理论。希望通过本项目的学习，能在理论与实践之间取得一种平衡。分布式系统整体的架构知识参考周志明的《凤凰架构》，其他具体的技术则参考各种书籍和在线文档。
+
+# Part 0 - Overview
+
+
 
 # Part 1 - Service
 
@@ -21,6 +25,10 @@
 3. 将序列化后的结果作为响应
 
 我们在 `./internal/server/http.go` 中定义了 `handleWrite` 和 `handleRead` 两个函数，分别用来处理记录的写入和读取；然后使用 `gorilla/mux` 库为不同的方法和路径注册了对应的处理函数；最后在 `./cmd/server/main.go` 中调用了服务器的 `ListenAndServe` 方法。
+
+## HTTP
+
+详见 [HTTP](./mds/HTTP.md) 中的内容。
 
 ## JSON 以及 Go 语言的 `encoding/json` 包
 
@@ -201,6 +209,8 @@ test:
 > Log - the abstraction that ties all the segments together.
 
 一个 `store` 结构体用来存放一条一条的记录，详见 `./internal/log/store.go` 中的注释。
+
+一个 `index` 结构体用来保存索引，它的实现使用了内存映射文件，详见 [`mmap`](./mds/mmap.md) 中的介绍。
 
 # Part 2 - Network
 

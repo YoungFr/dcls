@@ -33,7 +33,7 @@ func newStore(f *os.File) (*store, error) {
 // 将数字写入文件时使用的字节序
 var order = binary.BigEndian
 
-// 表示长度的数字所占用的字节数
+// 表示一条记录的长度的数字所占用的字节数
 const lenSize = 8
 
 // 将一条记录追加写入文件的末尾
@@ -41,7 +41,7 @@ const lenSize = 8
 // 这样在后续读取时就能知道应该读出多少字节
 //
 // 返回值 n 表示实际写入的字节数
-// 返回值 pos 表示该记录在文件中的起始索引
+// 返回值 pos 表示该条记录从文件的第几个字节开始
 func (s *store) Append(b []byte) (n uint64, pos uint64, err error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -67,7 +67,7 @@ func (s *store) Append(b []byte) (n uint64, pos uint64, err error) {
 	return uint64(w), pos, nil
 }
 
-// 读出起始索引为 pos 的记录
+// 读出从文件的第 pos 个字节开始的那条记录
 func (s *store) Read(pos uint64) ([]byte, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
