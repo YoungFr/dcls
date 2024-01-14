@@ -100,10 +100,15 @@ func (i *index) Read(relOffInput int64) (relOffOutput uint32, pos uint64, err er
 	return relOffOutput, pos, nil
 }
 
+// 判断 index 是否还有空间存储一个新的索引项
+func (i *index) HasSpace() bool {
+	return i.size+entrySize <= uint64(len(i.mmap))
+}
+
 var errNotEnoughIndexSpace = errors.New("index space is not enough to put new entry")
 
 func (i *index) Write(relOff uint32, pos uint64) error {
-	if uint64(len(i.mmap)) < i.size+entrySize {
+	if !i.HasSpace() {
 		return errNotEnoughIndexSpace
 	}
 	order.PutUint32(i.mmap[i.size:i.size+relOffSize], relOff)

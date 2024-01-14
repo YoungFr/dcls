@@ -63,6 +63,11 @@ func newSegment(dir string, baseOffset uint64, c Config) (s *segment, err error)
 }
 
 func (s *segment) Append(record *api.Record) (offset uint64, err error) {
+	// 只有 index 还有空间时才会向存储文件和索引文件中写入内容
+	if !s.index.HasSpace() {
+		return 0, errNotEnoughIndexSpace
+	}
+
 	// 当前记录的绝对下标
 	curr := s.nextOffset
 	record.Offset = curr
@@ -80,9 +85,7 @@ func (s *segment) Append(record *api.Record) (offset uint64, err error) {
 	}
 
 	// 将相对下标和它在存储文件中的位置写入索引文件
-	if err := s.index.Write(uint32(s.nextOffset-s.baseOffset), pos); err != nil {
-		return 0, err
-	}
+	s.index.Write(uint32(s.nextOffset-s.baseOffset), pos)
 
 	s.nextOffset++
 	return curr, nil
