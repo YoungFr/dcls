@@ -10,28 +10,30 @@ import (
 )
 
 type segment struct {
-	// 一个 segment 包含存储和索引
+	// 每个 segment 都包含存储和索引
 	store *store
 	index *index
 
-	// 第一个索引项表示的记录的绝对下标
-	baseOffset uint64
-	// 下一条要写入的记录的绝对下标
-	nextOffset uint64
+	// 本 segment 中存储的第一条记录的绝对下标
+	baseAbsOffset uint64
+
+	// 下一条要存储的记录的绝对下标
+	nextAbsOffset uint64
 
 	config Config
 }
 
-func newSegment(dir string, baseOffset uint64, c Config) (s *segment, err error) {
+func newSegment(dir string, baseAbsOffset uint64, c Config) (s *segment, err error) {
 	s = &segment{
-		baseOffset: baseOffset,
-		config:     c,
+		baseAbsOffset: baseAbsOffset,
+		config:        c,
 	}
 
 	// 创建存储文件
 	storeFile, err := os.OpenFile(
-		path.Join(dir, fmt.Sprintf("%d%s", baseOffset, ".store")),
-		os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
+		path.Join(dir, fmt.Sprintf("%d%s", baseAbsOffset, ".store")),
+		os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -41,8 +43,9 @@ func newSegment(dir string, baseOffset uint64, c Config) (s *segment, err error)
 
 	// 创建索引文件
 	indexFile, err := os.OpenFile(
-		path.Join(dir, fmt.Sprintf("%d%s", baseOffset, ".index")),
-		os.O_RDWR|os.O_CREATE, 0644)
+		path.Join(dir, fmt.Sprintf("%d%s", baseAbsOffset, ".index")),
+		os.O_RDWR|os.O_CREATE, 0644,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -50,27 +53,28 @@ func newSegment(dir string, baseOffset uint64, c Config) (s *segment, err error)
 		return nil, err
 	}
 
-	// 设置 nextOffset 的值
-	// 如果索引文件为空则 nextOffset 和 baseOffset 相等
-	// 否则是 baseOffset 加上当前索引中的索引项数目
+	// 设置新建 segment 时 nextAbsOffset 的值
+	// 如果索引文件为空则下一条要存储的记录的绝对下标就是 baseAbsOffset
+	//
+	// 否则下一条要存储的记录的绝对下标是 baseAbsOffset 加上当前的索引项总数
+	// 参考 (*index).Read 方法中的注释
 	if currMaxRelOff, _, err := s.index.Read(-1); err == errEmptyIndexFile {
-		s.nextOffset = baseOffset
+		s.nextAbsOffset = baseAbsOffset
 	} else {
-		s.nextOffset = baseOffset + uint64(currMaxRelOff) + 1
+		s.nextAbsOffset = baseAbsOffset + (uint64(currMaxRelOff) + 1)
 	}
 
 	return s, nil
 }
 
-func (s *segment) Append(record *api.Record) (offset uint64, err error) {
-	// 只有 index 还有空间时才会向存储文件和索引文件中写入内容
+func (s *segment) Append(record *api.Record) (absOff uint64, err error) {
+	// 只有在 index 还有空间时才会向存储文件和索引文件中写入内容
 	if !s.index.HasSpace() {
 		return 0, errNotEnoughIndexSpace
 	}
 
-	// 当前记录的绝对下标
-	curr := s.nextOffset
-	record.Offset = curr
+	// 新写入的记录的绝对下标
+	record.Offset = s.nextAbsOffset
 
 	// 序列化
 	b, err := proto.Marshal(record)
@@ -85,15 +89,18 @@ func (s *segment) Append(record *api.Record) (offset uint64, err error) {
 	}
 
 	// 将相对下标和它在存储文件中的位置写入索引文件
-	s.index.Write(uint32(s.nextOffset-s.baseOffset), pos)
+	s.index.Write(uint32(s.nextAbsOffset-s.baseAbsOffset), pos)
 
-	s.nextOffset++
-	return curr, nil
+	s.nextAbsOffset++
+
+	return record.Offset, nil
 }
 
 func (s *segment) Read(absOff uint64) (record *api.Record, err error) {
-	// 先读取索引文件获取它在存储文件中的位置
-	_, pos, err := s.index.Read(int64(absOff - s.baseOffset))
+	// 先根据相对下标读取索引文件
+	// 获取记录在存储文件中的位置
+	relOff := int64(absOff - s.baseAbsOffset)
+	_, pos, err := s.index.Read(relOff)
 	if err != nil {
 		return nil, err
 	}

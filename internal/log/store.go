@@ -9,9 +9,15 @@ import (
 )
 
 type store struct {
+	mu sync.Mutex
+
+	// 存储日志记录的文件
 	*os.File
-	mu   sync.Mutex
-	buf  *bufio.Writer
+
+	// 写缓冲区
+	buf *bufio.Writer
+
+	// 文件大小
 	size uint64
 }
 
@@ -24,8 +30,9 @@ func newStore(f *os.File) (*store, error) {
 	size := uint64(finfo.Size())
 	return &store{
 		File: f,
+		// 缓冲区的默认大小是 4096 字节
+		buf:  bufio.NewWriter(f),
 		size: size,
-		buf:  bufio.NewWriter(f), // 缓冲区的默认大小是 4096 字节
 	}, nil
 }
 
@@ -40,7 +47,7 @@ const lenSize = 8 // sizeof(uint64)
 // 这样在后续读取时就能知道应该读出多少字节
 //
 // 返回值 n 表示实际写入的字节数
-// 返回值 pos 表示该条记录从文件的第几个字节开始
+// 返回值 pos 表示该条记录是从文件的第几个字节开始存储的
 func (s *store) Append(b []byte) (n uint64, pos uint64, err error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -59,7 +66,7 @@ func (s *store) Append(b []byte) (n uint64, pos uint64, err error) {
 		return 0, 0, err
 	}
 
-	// 实际写入了 w + lenSize 个字节
+	// 实际写入了 w+lenSize 个字节
 	w += lenSize
 	s.size += uint64(w)
 
