@@ -8,7 +8,7 @@
 
 # Part 0 - Overview
 
-
+TODO
 
 # Part 1 - Service
 
@@ -214,7 +214,15 @@ test:
 
 一个 `segment` 结构体用来同时保存记录和索引，详见 `./internal/log/segment.go` 中的注释。
 
+一个 `Log` 结构体包括一系列 `segment` 对象，用来处理日志记录的读写。详见 `./internal/log/log.go` 中的注释。
+
 # Part 2 - Network
+
+## RPC 与 REST
+
+TODO
+
+## 使用 gRPC 框架
 
 TODO
 
