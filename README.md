@@ -108,7 +108,7 @@ console.log(obj.result) // true
 console.log(JSON.stringify([new Number(3), new String('false'), new Boolean(false)]))
 ```
 
-虽然 JSON 使用基于 JavaScript 的语法来描述数据对象，但它仍是一种独立于平台和语言的数据表示和交换格式。比如，Go 语言的 [`encoding/json`](https://pkg.go.dev/encoding/json) 包就提供了将 Go 语言对象序列化为 JSON 字符串和将 JSON 字符串反序列化为 Go 语言对象的方法，其中的核心是 [`Marshal`](https://pkg.go.dev/encoding/json#Marshal) 和 [`Unmarshal`](https://pkg.go.dev/encoding/json#Unmarshal) 函数。这两个函数的文档详细描述了 Go 语言的值和 JSON 的值的对应关系。 一个需要特别注意的地方是 Go 会将 `[]byte` 类型的值编码为一个使用 `base64` 编码（在 [RFC 4648](https://datatracker.ietf.org/doc/html/rfc4648) 中描述）的字符串。
+虽然 JSON 使用基于 JavaScript 的语法来描述数据对象，但它仍是一种独立于平台和语言的数据表示和交换格式。比如，Go 语言的 [`encoding/json`](https://pkg.go.dev/encoding/json) 包就提供了将 Go 语言对象序列化为 JSON 字符串和将 JSON 字符串反序列化为 Go 语言对象的方法，其中的核心是 [`Marshal`](https://pkg.go.dev/encoding/json#Marshal) 和 [`Unmarshal`](https://pkg.go.dev/encoding/json#Unmarshal) 函数。这两个函数的文档详细描述了 Go 语言的值和 JSON 的值的对应关系。 一个需要特别注意的地方是 Go 会将 `[]byte` 类型的值序列化为一个使用 `base64` 编码（在 [RFC 4648](https://datatracker.ietf.org/doc/html/rfc4648) 中描述）的字符串。
 
 ## 测试
 
@@ -220,7 +220,11 @@ test:
 
 ## RPC 与 REST
 
-TODO
+RPC 的来龙去脉 —— 来自《凤凰架构》的第 2 章。
+
+1. RPC 的通信成本：远程服务将计算机的工作范围从单机扩展至网络，从本地延伸到远程，是构建分布式系统的首要基础。在 RPC 刚开始出现时，其目的是让计算机能够像调用本地方法一样调用远程方法。在调用本地方法时，计算机（调用者）通常要做传递方法参数、执行被调方法、返回执行结果三件事。但是当调用者与被调者分属不同进程时，如何传递参数和返回结果就成了一个障碍，而 RPC 最初出现时就是被视作一种进程间通信方法来解决这个问题。进程间通信的方法有 **管道** （在相关进程间传递少量字节）、**FIFO** （命名管道，用于在无关进程间传递少量字节）、 **信号** （通知目标进程有某种事件发生）、 **信号量** （进程同步）、 **消息队列** （在进程间传递较多的数据）、 **共享内存** （与信号量结合使用）和 **套接字** （Unix Domain and Internet Domain Socket）。特别要注意的是 Internet Domain Socket 方法，因为它是所有操作系统都提供的标准接口，所以可以用它来进行参数和结果的通信。从而，远程方法的调用细节被隐藏在操作系统底层，做到了“透明的” RPC 调用。但是，这种透明的 RPC 调用却带来了一种通信无成本的假象因而招致了滥用，导致降低了系统性能。随着 1997 年 [Fallacies of Distributed Computing](https://en.wikipedia.org/wiki/Fallacies_of_distributed_computing) 的发表，“**RPC 应该是一种高层次或说语言层次的特征而不是像 IPC 那样是低层次或说系统层次的特征**”的观点成为业界和学界的主流。
+2. RPC 的三个基本问题：惠普和 Apollo 提出的 DCE/RPC 和 Sun 公司提出的 ONC RPC 是如今各种 RPC 协议和框架的鼻祖，从它们开始，各种 RPC 协议和框架无非要解决 **如何表示数据** （使用中立的数据流格式进行序列化和反序列化）、 **如何传递数据** （一般基于 TCP 和 UDP 等传输层协议）和 **如何表示方法** （接口描述语言 IDL 和 UUID 的使用）三个问题。
+3. RPC 的统一与分裂：早期的 DCE/RPC 、 ONC RPC 、 DCOM 和 CORBA 都因为各种问题从未大规模流行过，已经被扫进了计算机历史博物馆。最终，于 1998 年诞生的数据交换格式 XML 和于 1999 年诞生的 Web Service 远程服务协议取得了统一，风头一时无两。但是，“贪婪的” Web Service 试图通过制定一整套协议来解决分布式计算中的事务、一致性、事件、通知、业务描述、安全等各种功能，这些数不清的协议极大地增加了人们的学习负担，大家对 Web Service 的热情很快冷却。人们逐渐意识到：很难有一个同时满足简单、普适、高性能的完美的 RPC 协议。于是 RPC 协议和框架又一次走向分裂。现在的 RPC 框架往往都针对某个特点作为其主要发展方向，比如 **面向对象** （RMI 和 .NET Remoting）、 **性能** （gRPC 和 Thrift）和 **简化** （JSON-RPC）。最近的 RPC 框架则普遍聚焦于提供负载均衡、服务注册、可观测性等更高层次的能力的支持，而通过插件化的形式来解决上述的三个基本问题。比如，用户可以自己选择要使用的数据交换格式和数据传输协议。
 
 ## 使用 gRPC 框架
 
