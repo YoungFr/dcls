@@ -260,7 +260,18 @@ gRPC 使用 Protocol Buffers 作为其接口描述语言（IDL）和数据交换
   rpc BidiHello(stream HelloRequest) returns (stream HelloResponse);
   ```
 
+在 Go 语言中使用 gRPC 需要安装 [grpc-go](https://github.com/grpc/grpc-go) 库，基本示例、文档和各种特性的示例也在这个仓库中。 [helloworld](https://github.com/grpc/grpc-go/tree/master/examples/helloworld) 是一个最基础的例子， [route_guide](https://github.com/grpc/grpc-go/tree/master/examples/route_guide) 则是一个更复杂的例子，官网的 [Basic Tutorial](https://grpc.io/docs/languages/go/basics/) 页面介绍的就是这个示例。gRPC 提供的其他各种特性在 [Documentation](https://github.com/grpc/grpc-go/tree/master/Documentation) 中描述，使用示例则存放在 [features](https://github.com/grpc/grpc-go/tree/master/examples/features) 目录下。
 
+接下来开始实现我们的 RPC 服务。
+
+首先在 `log.proto` 中新增服务的定义，然后运行下面两条命令来安装 gRPC 插件以编译 gRPC 服务：
+
+```bash
+$ go get google.golang.org/grpc
+$ go install google.golang.org/grpc/cmd/protoc-gen-go-grpc
+```
+
+修改 Makefile 后运行 `make compile` 命令就会发现在 `api/v1` 目录下生成了 `log_grpc.pb.go` 文件，里边有一个实现好的客户端和一系列需要我们实现的服务端 API ，接下来的任务就是分别实现它们。详见代码中的注释。
 
 # Part 3 - Distribute
 

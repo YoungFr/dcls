@@ -1,7 +1,43 @@
 syntax = "proto3";
 
 package log.v1;
+
 option go_package = "github.com/youngfr/api/log_v1";
+
+// service
+service Log {
+    // append
+    rpc Produce(ProduceRequest) returns (ProduceResponse) {}
+
+    // read
+    rpc Consume(ConsumeRequest) returns (ConsumeResponse) {}
+
+    // server streaming read
+    rpc ConsumeStream(ConsumeRequest) returns (stream ConsumeResponse) {}
+
+    // bidirectional streaming append
+    rpc ProduceStream(stream ProduceRequest) returns (stream ProduceResponse) {}
+}
+
+// append req
+message ProduceRequest  {
+    Record record = 1;
+}
+
+// append rsp
+message ProduceResponse  {
+    uint64 offset = 1;
+}
+
+// read req
+message ConsumeRequest {
+    uint64 offset = 1;
+}
+
+// read rsp
+message ConsumeResponse {
+    Record record = 2;
+}
 
 message Record {
     bytes value = 1;

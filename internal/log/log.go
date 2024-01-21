@@ -1,7 +1,6 @@
 package log
 
 import (
-	"fmt"
 	"os"
 	"sort"
 	"strconv"
@@ -148,7 +147,7 @@ func (l *Log) Read(absOff uint64) (record *api.Record, err error) {
 	}
 
 	if s == nil || s.nextAbsOffset <= absOff {
-		return nil, fmt.Errorf("absolute offset out of range: %d", absOff)
+		return nil, api.ErrOffsetOutOfRange{Offset: absOff}
 	}
 
 	return s.Read(absOff)
