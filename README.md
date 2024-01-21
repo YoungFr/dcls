@@ -226,9 +226,41 @@ RPC 的来龙去脉 —— 来自《凤凰架构》的第 2 章。
 2. RPC 的三个基本问题：惠普和 Apollo 提出的 DCE/RPC 和 Sun 公司提出的 ONC RPC 是如今各种 RPC 协议和框架的鼻祖，从它们开始，各种 RPC 协议和框架无非要解决 **如何表示数据** （使用中立的数据流格式进行序列化和反序列化）、 **如何传递数据** （一般基于 TCP 和 UDP 等传输层协议）和 **如何表示方法** （接口描述语言 IDL 和 UUID 的使用）三个问题。
 3. RPC 的统一与分裂：早期的 DCE/RPC 、 ONC RPC 、 DCOM 和 CORBA 都因为各种问题从未大规模流行过，已经被扫进了计算机历史博物馆。最终，于 1998 年诞生的数据交换格式 XML 和于 1999 年诞生的 Web Service 远程服务协议取得了统一，风头一时无两。但是，“贪婪的” Web Service 试图通过制定一整套协议来解决分布式计算中的事务、一致性、事件、通知、业务描述、安全等各种功能，这些数不清的协议极大地增加了人们的学习负担，大家对 Web Service 的热情很快冷却。人们逐渐意识到：很难有一个同时满足简单、普适、高性能的完美的 RPC 协议。于是 RPC 协议和框架又一次走向分裂。现在的 RPC 框架往往都针对某个特点作为其主要发展方向，比如 **面向对象** （RMI 和 .NET Remoting）、 **性能** （gRPC 和 Thrift）和 **简化** （JSON-RPC）。最近的 RPC 框架则普遍聚焦于提供负载均衡、服务注册、可观测性等更高层次的能力的支持，而通过插件化的形式来解决上述的三个基本问题。比如，用户可以自己选择要使用的数据交换格式和数据传输协议。
 
+REST：TODO
+
 ## 使用 gRPC 框架
 
-TODO
+gRPC 的基础知识 —— 来自官网的 [Introduction to gRPC](https://grpc.io/docs/what-is-grpc/introduction/) 、[Core concepts, Architecture and Lifecycle](https://grpc.io/docs/what-is-grpc/core-concepts/) 和 [FAQ](https://grpc.io/docs/what-is-grpc/faq/) 页面。
+
+在 gRPC 中，客户端可以直接调用位于不同机器上的服务端方法。像很多 RPC 系统一样，gRPC 也需要首先定义服务、声明可以远程调用的方法及其参数和返回值，然后服务端需要实现这个接口并运行一个 gRPC 服务器来处理客户端调用请求；在服务端则有一个 stub 来提供和服务端相同的方法。
+
+gRPC 使用 Protocol Buffers 作为其接口描述语言（IDL）和数据交换格式（也可以使用其他格式，比如 JSON）。在定义服务端方法时，gRPC 允许我们定义 4 种不同的类型：
+
+- Unary RPC：客户端的请求和服务端的响应都是单条消息，就像普通的函数那样。
+
+  ```protobuf
+  rpc SayHello(HelloRequest) returns (HelloResponse);
+  ```
+
+- Server streaming RPC：客户端请求是单条消息，服务端响应则是一个消息流。客户端可以不断地从中读取消息直到没有更多的消息。
+
+  ```protobuf
+  rpc LotsOfReplies(HelloRequest) returns (stream HelloResponse);
+  ```
+
+- Client streaming RPC：客户端以流的形式将一系列消息写入并发送，然后等待服务端读取流并回复响应。
+
+  ```protobuf
+  rpc LotsOfGreetings(stream HelloRequest) returns (HelloResponse);
+  ```
+
+- Bidirectional streaming RPC：客户端和服务端都使用一个读写流来发送消息，并且这两个流的操作是彼此独立的，从而客户端和服务端可以以任何顺序进行读和写。
+
+  ```protobuf
+  rpc BidiHello(stream HelloRequest) returns (stream HelloResponse);
+  ```
+
+
 
 # Part 3 - Distribute
 
