@@ -27,15 +27,15 @@ type gRPCServer struct {
 	// 所有服务器实现都必须内嵌 UnimplementedLogServer 来保证向前兼容性
 	api.UnimplementedLogServer
 
-	// 这里相当于内嵌一个 *log.Log 对象
+	// 内嵌一个 *log.Log 对象
 	*Config
 }
 
 // 我们的服务器需要实现 api.LogServer 接口
 var _ api.LogServer = (*gRPCServer)(nil)
 
-func NewgRPCServer(c *Config) (*grpc.Server, error) {
-	s := grpc.NewServer()
+func NewgRPCServer(c *Config, opts ...grpc.ServerOption) (*grpc.Server, error) {
+	s := grpc.NewServer(opts...)
 	srv, err := newgRPCServer(c)
 	if err != nil {
 		return nil, err

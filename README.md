@@ -273,6 +273,20 @@ $ go install google.golang.org/grpc/cmd/protoc-gen-go-grpc
 
 修改 Makefile 后运行 `make compile` 命令就会发现在 `api/v1` 目录下生成了 `log_grpc.pb.go` 文件，里边有一个实现好的客户端和一系列需要我们实现的服务端 API ，接下来的任务就是分别实现它们。详见代码中的注释。
 
+## 认证与授权
+
+实现安全的步骤：
+
+- 数据加密 —— 使用 [TLS](https://www.cloudflare.com/zh-cn/learning/ssl/transport-layer-security-tls/) 防止 [中间人（Man-In-The-Middle attack, MITM）攻击](https://en.wikipedia.org/wiki/Man-in-the-middle_attack) 。我们接下来会为服务器和客户端获取证书并告诉 gRPC 使用这些证书来进行 TLS 加密通信。
+- 认证 —— 在公开的 Web 服务中使用的是单向 TLS 认证。即只需要服务端提供证书，客户端通过证书来验证服务端身份，而服务端对客户端的认证则通过用户名加密码和 Token 的方式来完成。 [双向 TLS 认证](https://www.cloudflare.com/zh-cn/learning/access-management/what-is-mutual-tls/) 则用于私密服务，比如分布式系统中机器之间的通信。在双向 TLS 认证中，客户端和服务端都需要提供证书来验证对方身份。
+- 授权 —— 当一项资源可以被多个用户访问时，系统需要控制一个用户可以看到哪些数据、进行哪些操作。
+
+
+
+## 系统的可观测性
+
+TODO
+
 # Part 3 - Distribute
 
 TODO
