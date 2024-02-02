@@ -16,7 +16,7 @@ import (
 )
 
 func TestServer(t *testing.T) {
-	testcases := map[string]func(t *testing.T, client api.LogClient, config *Config){
+	testcases := map[string]func(t *testing.T, client api.LogClient, config *LogImplConfig){
 		"produce/consume a message to/from the log succeeeds": testProduceConsume,
 		"produce/consume stream succeeds":                     testProduceConsumeStream,
 		"consume past log boundary fails":                     testConsumePastBoundary,
@@ -31,7 +31,7 @@ func TestServer(t *testing.T) {
 }
 
 // setup
-func setupTest(t *testing.T, fn func(*Config)) (client api.LogClient, config *Config, teardown func()) {
+func setupTest(t *testing.T, fn func(*LogImplConfig)) (client api.LogClient, config *LogImplConfig, teardown func()) {
 	t.Helper()
 
 	// 单向 TLS 认证测试
@@ -79,7 +79,7 @@ func setupTest(t *testing.T, fn func(*Config)) (client api.LogClient, config *Co
 	// clog, err := log.NewLog(dir, log.Config{})
 	// require.NoError(t, err)
 
-	// config = &Config{
+	// config = &LogImplConfig{
 	// 	CommitLog: clog,
 	// }
 	// if fn != nil {
@@ -138,7 +138,7 @@ func setupTest(t *testing.T, fn func(*Config)) (client api.LogClient, config *Co
 	clog, err := log.NewLog(dir, log.Config{})
 	require.NoError(t, err)
 
-	config = &Config{
+	config = &LogImplConfig{
 		CommitLog: clog,
 	}
 	if fn != nil {
@@ -164,7 +164,7 @@ func setupTest(t *testing.T, fn func(*Config)) (client api.LogClient, config *Co
 }
 
 // produceconsume
-func testProduceConsume(t *testing.T, client api.LogClient, config *Config) {
+func testProduceConsume(t *testing.T, client api.LogClient, config *LogImplConfig) {
 	ctx := context.Background()
 
 	want := &api.Record{Value: []byte("hello world")}
@@ -182,7 +182,7 @@ func testProduceConsume(t *testing.T, client api.LogClient, config *Config) {
 }
 
 // consumeerror
-func testConsumePastBoundary(t *testing.T, client api.LogClient, config *Config) {
+func testConsumePastBoundary(t *testing.T, client api.LogClient, config *LogImplConfig) {
 	ctx := context.Background()
 
 	produce, err := client.Produce(
@@ -208,7 +208,7 @@ func testConsumePastBoundary(t *testing.T, client api.LogClient, config *Config)
 }
 
 // stream
-func testProduceConsumeStream(t *testing.T, client api.LogClient, config *Config) {
+func testProduceConsumeStream(t *testing.T, client api.LogClient, config *LogImplConfig) {
 	ctx := context.Background()
 
 	records := []*api.Record{{
