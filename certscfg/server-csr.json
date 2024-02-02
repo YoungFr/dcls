@@ -1,5 +1,5 @@
 {
-    "CN": "127.0.0.1",
+    "CN": "log server",
     "hosts": [
         "localhost",
         "127.0.0.1"
@@ -12,8 +12,8 @@
         {
             "C":  "CN",
             "L":  "Shanghai",
-            "O":  "My Awesome Company",
-            "OU": "CA Services",
+            "O":  "YoungFr Company",
+            "OU": "Distributed Log Services",
             "ST": "Shanghai"
         }
     ]

@@ -1,5 +1,6 @@
 {
-    "CN": "YoungFr CA",
+    "CN": "log client",
+    "hosts": [""],
     "key": {
         "algo": "rsa",
         "size": 2048
@@ -9,7 +10,7 @@
             "C":  "CN",
             "L":  "Shanghai",
             "O":  "YoungFr Company",
-            "OU": "CA Services",
+            "OU": "Distributed Log Services",
             "ST": "Shanghai"
         }
     ]

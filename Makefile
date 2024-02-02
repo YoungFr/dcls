@@ -7,7 +7,7 @@ init:
 	rm  -rf  ${CONFIG_PATH}
 	mkdir -p ${CONFIG_PATH}
 
-# 根证书, 服务端证书
+# 根证书, 服务端证书, 客户端证书
 .PHONY: gencert
 gencert:
 	cfssl gencert -initca certscfg/ca-csr.json | cfssljson -bare ca
@@ -18,6 +18,13 @@ gencert:
 		-config=certscfg/ca-config.json \
 		-profile=server \
 		certscfg/server-csr.json | cfssljson -bare server
+	
+	cfssl gencert \
+		-ca=ca.pem \
+		-ca-key=ca-key.pem \
+		-config=certscfg/ca-config.json \
+		-profile=client \
+		certscfg/client-csr.json | cfssljson -bare client
 	
 	mv *.pem *.csr ${CONFIG_PATH}
 
