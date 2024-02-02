@@ -17,6 +17,7 @@ import (
 type CommitLog interface {
 	Append(*api.Record) (uint64, error)
 	Read(uint64) (*api.Record, error)
+	Reset() error
 }
 
 // 保证 *log.Log 实现了 CommitLog 接口
@@ -73,41 +74,11 @@ func (s *gRPCServer) Consume(ctx context.Context, req *api.ConsumeRequest) (*api
 	return &api.ConsumeResponse{Record: record}, nil
 }
 
-func (s *gRPCServer) ProduceStream(stream api.Log_ProduceStreamServer) error {
-	for {
-		req, err := stream.Recv()
-		if err != nil {
-			return err
-		}
-		rsp, err := s.Produce(stream.Context(), req)
-		if err != nil {
-			return err
-		}
-		if err = stream.Send(rsp); err != nil {
-			return err
-		}
-	}
-}
-
-func (s *gRPCServer) ConsumeStream(req *api.ConsumeRequest, stream api.Log_ConsumeStreamServer) error {
-	for {
-		select {
-		case <-stream.Context().Done():
-			return nil
-		default:
-			rsp, err := s.Consume(stream.Context(), req)
-			switch err.(type) {
-			case nil:
-				// do nothing
-			case api.ErrOffsetOutOfRange:
-				continue
-			default:
-				return err
-			}
-			if err = stream.Send(rsp); err != nil {
-				return err
-			}
-			req.Offset++
-		}
+// 删除所有日志
+func (s *gRPCServer) Reset(ctx context.Context, req *api.ResetRequest) (*api.ResetResponse, error) {
+	if err := s.CommitLog.Reset(); err != nil {
+		return &api.ResetResponse{Ans: "Reset Failed"}, err
+	} else {
+		return &api.ResetResponse{Ans: "Reset OK"}, nil
 	}
 }

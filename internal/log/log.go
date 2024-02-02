@@ -165,52 +165,12 @@ func (l *Log) Close() error {
 	return nil
 }
 
-func (l *Log) Remove() error {
+func (l *Log) Reset() error {
 	if err := l.Close(); err != nil {
 		return err
 	}
-	return os.RemoveAll(l.Dir)
-}
-
-func (l *Log) Reset() error {
-	if err := l.Remove(); err != nil {
+	if err := os.RemoveAll(l.Dir); err != nil {
 		return err
 	}
 	return l.setup()
-}
-
-func (l *Log) LowestOffset() (uint64, error) {
-	l.mu.RLock()
-	defer l.mu.RUnlock()
-
-	return l.segments[0].baseAbsOffset, nil
-}
-
-func (l *Log) HighestOffset() (uint64, error) {
-	l.mu.RLock()
-	defer l.mu.RUnlock()
-
-	offset := l.segments[len(l.segments)-1].nextAbsOffset
-	if offset == 0 {
-		return 0, nil
-	}
-	return offset - 1, nil
-}
-
-func (l *Log) Truncate(lowest uint64) error {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-
-	segments := make([]*segment, 0)
-	for _, s := range l.segments {
-		if s.nextAbsOffset <= lowest+1 {
-			if err := s.Remove(); err != nil {
-				return err
-			}
-			continue
-		}
-		segments = append(segments, s)
-	}
-	l.segments = segments
-	return nil
 }

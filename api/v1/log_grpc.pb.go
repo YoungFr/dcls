@@ -19,24 +19,21 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Log_Produce_FullMethodName       = "/log.v1.Log/Produce"
-	Log_Consume_FullMethodName       = "/log.v1.Log/Consume"
-	Log_ConsumeStream_FullMethodName = "/log.v1.Log/ConsumeStream"
-	Log_ProduceStream_FullMethodName = "/log.v1.Log/ProduceStream"
+	Log_Produce_FullMethodName = "/log.v1.Log/Produce"
+	Log_Consume_FullMethodName = "/log.v1.Log/Consume"
+	Log_Reset_FullMethodName   = "/log.v1.Log/Reset"
 )
 
 // LogClient is the client API for Log service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type LogClient interface {
-	// append
+	// 追加一条日志
 	Produce(ctx context.Context, in *ProduceRequest, opts ...grpc.CallOption) (*ProduceResponse, error)
-	// read
+	// 读取一条日志
 	Consume(ctx context.Context, in *ConsumeRequest, opts ...grpc.CallOption) (*ConsumeResponse, error)
-	// server streaming read
-	ConsumeStream(ctx context.Context, in *ConsumeRequest, opts ...grpc.CallOption) (Log_ConsumeStreamClient, error)
-	// bidirectional streaming append
-	ProduceStream(ctx context.Context, opts ...grpc.CallOption) (Log_ProduceStreamClient, error)
+	// 删除所有日志
+	Reset(ctx context.Context, in *ResetRequest, opts ...grpc.CallOption) (*ResetResponse, error)
 }
 
 type logClient struct {
@@ -65,81 +62,25 @@ func (c *logClient) Consume(ctx context.Context, in *ConsumeRequest, opts ...grp
 	return out, nil
 }
 
-func (c *logClient) ConsumeStream(ctx context.Context, in *ConsumeRequest, opts ...grpc.CallOption) (Log_ConsumeStreamClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Log_ServiceDesc.Streams[0], Log_ConsumeStream_FullMethodName, opts...)
+func (c *logClient) Reset(ctx context.Context, in *ResetRequest, opts ...grpc.CallOption) (*ResetResponse, error) {
+	out := new(ResetResponse)
+	err := c.cc.Invoke(ctx, Log_Reset_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &logConsumeStreamClient{stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
-}
-
-type Log_ConsumeStreamClient interface {
-	Recv() (*ConsumeResponse, error)
-	grpc.ClientStream
-}
-
-type logConsumeStreamClient struct {
-	grpc.ClientStream
-}
-
-func (x *logConsumeStreamClient) Recv() (*ConsumeResponse, error) {
-	m := new(ConsumeResponse)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
-func (c *logClient) ProduceStream(ctx context.Context, opts ...grpc.CallOption) (Log_ProduceStreamClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Log_ServiceDesc.Streams[1], Log_ProduceStream_FullMethodName, opts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &logProduceStreamClient{stream}
-	return x, nil
-}
-
-type Log_ProduceStreamClient interface {
-	Send(*ProduceRequest) error
-	Recv() (*ProduceResponse, error)
-	grpc.ClientStream
-}
-
-type logProduceStreamClient struct {
-	grpc.ClientStream
-}
-
-func (x *logProduceStreamClient) Send(m *ProduceRequest) error {
-	return x.ClientStream.SendMsg(m)
-}
-
-func (x *logProduceStreamClient) Recv() (*ProduceResponse, error) {
-	m := new(ProduceResponse)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
+	return out, nil
 }
 
 // LogServer is the server API for Log service.
 // All implementations must embed UnimplementedLogServer
 // for forward compatibility
 type LogServer interface {
-	// append
+	// 追加一条日志
 	Produce(context.Context, *ProduceRequest) (*ProduceResponse, error)
-	// read
+	// 读取一条日志
 	Consume(context.Context, *ConsumeRequest) (*ConsumeResponse, error)
-	// server streaming read
-	ConsumeStream(*ConsumeRequest, Log_ConsumeStreamServer) error
-	// bidirectional streaming append
-	ProduceStream(Log_ProduceStreamServer) error
+	// 删除所有日志
+	Reset(context.Context, *ResetRequest) (*ResetResponse, error)
 	mustEmbedUnimplementedLogServer()
 }
 
@@ -153,11 +94,8 @@ func (UnimplementedLogServer) Produce(context.Context, *ProduceRequest) (*Produc
 func (UnimplementedLogServer) Consume(context.Context, *ConsumeRequest) (*ConsumeResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Consume not implemented")
 }
-func (UnimplementedLogServer) ConsumeStream(*ConsumeRequest, Log_ConsumeStreamServer) error {
-	return status.Errorf(codes.Unimplemented, "method ConsumeStream not implemented")
-}
-func (UnimplementedLogServer) ProduceStream(Log_ProduceStreamServer) error {
-	return status.Errorf(codes.Unimplemented, "method ProduceStream not implemented")
+func (UnimplementedLogServer) Reset(context.Context, *ResetRequest) (*ResetResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Reset not implemented")
 }
 func (UnimplementedLogServer) mustEmbedUnimplementedLogServer() {}
 
@@ -208,51 +146,22 @@ func _Log_Consume_Handler(srv interface{}, ctx context.Context, dec func(interfa
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Log_ConsumeStream_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(ConsumeRequest)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
-	}
-	return srv.(LogServer).ConsumeStream(m, &logConsumeStreamServer{stream})
-}
-
-type Log_ConsumeStreamServer interface {
-	Send(*ConsumeResponse) error
-	grpc.ServerStream
-}
-
-type logConsumeStreamServer struct {
-	grpc.ServerStream
-}
-
-func (x *logConsumeStreamServer) Send(m *ConsumeResponse) error {
-	return x.ServerStream.SendMsg(m)
-}
-
-func _Log_ProduceStream_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(LogServer).ProduceStream(&logProduceStreamServer{stream})
-}
-
-type Log_ProduceStreamServer interface {
-	Send(*ProduceResponse) error
-	Recv() (*ProduceRequest, error)
-	grpc.ServerStream
-}
-
-type logProduceStreamServer struct {
-	grpc.ServerStream
-}
-
-func (x *logProduceStreamServer) Send(m *ProduceResponse) error {
-	return x.ServerStream.SendMsg(m)
-}
-
-func (x *logProduceStreamServer) Recv() (*ProduceRequest, error) {
-	m := new(ProduceRequest)
-	if err := x.ServerStream.RecvMsg(m); err != nil {
+func _Log_Reset_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResetRequest)
+	if err := dec(in); err != nil {
 		return nil, err
 	}
-	return m, nil
+	if interceptor == nil {
+		return srv.(LogServer).Reset(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Log_Reset_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LogServer).Reset(ctx, req.(*ResetRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 // Log_ServiceDesc is the grpc.ServiceDesc for Log service.
@@ -270,19 +179,11 @@ var Log_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "Consume",
 			Handler:    _Log_Consume_Handler,
 		},
-	},
-	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "ConsumeStream",
-			Handler:       _Log_ConsumeStream_Handler,
-			ServerStreams: true,
-		},
-		{
-			StreamName:    "ProduceStream",
-			Handler:       _Log_ProduceStream_Handler,
-			ServerStreams: true,
-			ClientStreams: true,
+			MethodName: "Reset",
+			Handler:    _Log_Reset_Handler,
 		},
 	},
+	Streams:  []grpc.StreamDesc{},
 	Metadata: "api/v1/log.proto",
 }

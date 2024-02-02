@@ -18,7 +18,6 @@ import (
 func TestServer(t *testing.T) {
 	testcases := map[string]func(t *testing.T, client api.LogClient, config *LogImplConfig){
 		"produce/consume a message to/from the log succeeeds": testProduceConsume,
-		"produce/consume stream succeeds":                     testProduceConsumeStream,
 		"consume past log boundary fails":                     testConsumePastBoundary,
 	}
 	for scenario, fn := range testcases {
@@ -159,7 +158,7 @@ func setupTest(t *testing.T, fn func(*LogImplConfig)) (client api.LogClient, con
 		server.Stop()
 		conn.Close()
 		ln.Close()
-		clog.Remove()
+		clog.Close()
 	}
 }
 
@@ -204,48 +203,5 @@ func testConsumePastBoundary(t *testing.T, client api.LogClient, config *LogImpl
 	want := status.Code(api.ErrOffsetOutOfRange{}.GRPCStatus().Err())
 	if got != want {
 		t.Fatalf("got err: %v, want: %v", got, want)
-	}
-}
-
-// stream
-func testProduceConsumeStream(t *testing.T, client api.LogClient, config *LogImplConfig) {
-	ctx := context.Background()
-
-	records := []*api.Record{{
-		Value:  []byte("first message"),
-		Offset: 0,
-	}, {
-		Value:  []byte("second message"),
-		Offset: 1,
-	}}
-
-	{
-		stream, err := client.ProduceStream(ctx)
-		require.NoError(t, err)
-		for offset, record := range records {
-			err = stream.Send(&api.ProduceRequest{Record: record})
-			require.NoError(t, err)
-
-			res, err := stream.Recv()
-			require.NoError(t, err)
-
-			if res.Offset != uint64(offset) {
-				t.Fatalf("got offset: %d, want: %d", res.Offset, offset)
-			}
-		}
-	}
-
-	{
-		stream, err := client.ConsumeStream(ctx, &api.ConsumeRequest{Offset: 0})
-		require.NoError(t, err)
-
-		for i, record := range records {
-			res, err := stream.Recv()
-			require.NoError(t, err)
-			require.Equal(t, res.Record, &api.Record{
-				Value:  record.Value,
-				Offset: uint64(i),
-			})
-		}
 	}
 }

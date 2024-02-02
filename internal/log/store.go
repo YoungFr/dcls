@@ -3,7 +3,6 @@ package log
 import (
 	"bufio"
 	"encoding/binary"
-	"io"
 	"os"
 	"sync"
 )
@@ -26,8 +25,10 @@ func newStore(f *os.File) (*store, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	// 获取文件当前的大小，单位是字节
 	size := uint64(finfo.Size())
+
 	return &store{
 		File: f,
 		// 缓冲区的默认大小是 4096 字节
@@ -98,17 +99,7 @@ func (s *store) Read(pos uint64) ([]byte, error) {
 	return b, nil
 }
 
-var _ io.ReaderAt = &store{}
-
-func (s *store) ReadAt(b []byte, off int64) (int, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if err := s.buf.Flush(); err != nil {
-		return 0, err
-	}
-	return s.File.ReadAt(b, off)
-}
-
+// 将存储的日志写入磁盘并关闭相应的文件
 func (s *store) Close() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()

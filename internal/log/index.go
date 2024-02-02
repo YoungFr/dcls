@@ -22,6 +22,7 @@ const (
 	//             index1        index2        index3
 	//
 	// 稍后我们会看到在 segment 中有一个 baseAbsOffset 成员
+	// 它表示本 segment 中存储的第一条日志的绝对下标
 	// 用一条记录的绝对下标减去 baseAbsOffset 就是相对下标
 	//
 	// 相对下标使用 uint32 类型来存储以节省空间
@@ -145,9 +146,8 @@ func (i *index) Close() error {
 	if err := i.file.Truncate(int64(i.size)); err != nil {
 		return err
 	}
+	if err := i.file.Close(); err != nil {
+		return err
+	}
 	return nil
-}
-
-func (i *index) Name() string {
-	return i.file.Name()
 }

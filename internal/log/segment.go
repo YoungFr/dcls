@@ -38,6 +38,7 @@ func newSegment(dir string, baseAbsOffset uint64, c Config) (s *segment, err err
 		return nil, err
 	}
 	if s.store, err = newStore(storeFile); err != nil {
+		storeFile.Close()
 		return nil, err
 	}
 
@@ -50,6 +51,7 @@ func newSegment(dir string, baseAbsOffset uint64, c Config) (s *segment, err err
 		return nil, err
 	}
 	if s.index, err = newIndex(indexFile, c); err != nil {
+		indexFile.Close()
 		return nil, err
 	}
 
@@ -133,17 +135,4 @@ func (s *segment) Close() error {
 func (s *segment) IsMaxed() bool {
 	return s.store.size >= s.config.Segment.MaxStoreBytes ||
 		s.index.size >= s.config.Segment.MaxIndexBytes
-}
-
-func (s *segment) Remove() error {
-	if err := s.Close(); err != nil {
-		return err
-	}
-	if err := os.Remove(s.index.Name()); err != nil {
-		return err
-	}
-	if err := os.Remove(s.store.Name()); err != nil {
-		return err
-	}
-	return nil
 }
