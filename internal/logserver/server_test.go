@@ -12,13 +12,11 @@ import (
 	"github.com/youngfr/dcls/internal/tlscfg"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/status"
 )
 
 func TestServer(t *testing.T) {
 	testcases := map[string]func(t *testing.T, client api.LogClient, config *LogImplConfig){
-		"produce/consume a message to/from the log succeeeds": testProduceConsume,
-		"consume past log boundary fails":                     testConsumePastBoundary,
+		"append/read a message to/from the log succeeeds": testAppendRead,
 	}
 	for scenario, fn := range testcases {
 		t.Run(scenario, func(t *testing.T) {
@@ -106,46 +104,17 @@ func setupTest(t *testing.T, fn func(*LogImplConfig)) (client api.LogClient, con
 	}
 }
 
-// produceconsume
-func testProduceConsume(t *testing.T, client api.LogClient, config *LogImplConfig) {
+func testAppendRead(t *testing.T, client api.LogClient, config *LogImplConfig) {
 	ctx := context.Background()
 
 	want := &api.Record{Value: []byte("hello world")}
 
-	// append
 	produce, err := client.Append(ctx, &api.AppendRequest{Record: want})
 	require.NoError(t, err)
 
-	// read
 	consume, err := client.Read(ctx, &api.ReadRequest{Offset: produce.Offset})
 	require.NoError(t, err)
 
 	require.Equal(t, want.Value, consume.Record.Value)
 	require.Equal(t, want.Offset, consume.Record.Offset)
-}
-
-// consumeerror
-func testConsumePastBoundary(t *testing.T, client api.LogClient, config *LogImplConfig) {
-	ctx := context.Background()
-
-	produce, err := client.Append(
-		ctx,
-		&api.AppendRequest{
-			Record: &api.Record{Value: []byte("hello world")},
-		},
-	)
-	require.NoError(t, err)
-
-	consume, err := client.Read(ctx, &api.ReadRequest{
-		Offset: produce.Offset + 1,
-	})
-	if consume != nil {
-		t.Fatal("consume not nil")
-	}
-
-	got := status.Code(err)
-	want := status.Code(api.ErrOffsetOutOfRange{}.GRPCStatus().Err())
-	if got != want {
-		t.Fatalf("got err: %v, want: %v", got, want)
-	}
 }

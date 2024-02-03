@@ -78,6 +78,7 @@ func main() {
 		}
 	}()
 
+	// 优雅关闭
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
 	log.Printf("received signal: %v\n", <-ch)

@@ -44,14 +44,17 @@ func main() {
 
 	// 要写入的日志
 	records := []*api.Record{
-		{Value: []byte("This is my first commit!")},
-		{Value: []byte("Nice to meet you!")},
-		{Value: []byte("Goodbye!")},
+		{Value: []byte("The sun is for the day")},
+		{Value: []byte("The moon is for the night")},
+		{Value: []byte("And you forever")},
 	}
 
 	// 读取第一条日志时报错
 	fmt.Println("-------- Read Error --------")
 	_, err = client.Read(ctx, &api.ReadRequest{Offset: 1})
+	if err == nil {
+		log.Fatalf("unexpected result: error should be non-nil\n")
+	}
 	fmt.Printf("failed to read: %v\n", err)
 
 	// 追加若干条日志
@@ -61,7 +64,7 @@ func main() {
 		if err != nil {
 			log.Fatalf("failed to append: %v\n", err)
 		} else {
-			fmt.Printf("the offset of %s is %d\n",
+			fmt.Printf("log content: [%s] offset: [%d]\n",
 				record.Value,
 				appendRsp.Offset,
 			)
@@ -75,18 +78,24 @@ func main() {
 		if err != nil {
 			log.Fatalf("failed to read: %v\n", err)
 		} else {
-			fmt.Printf("the content of LOGS[%d] is %s\n",
+			fmt.Printf("offset: [%d] log content: [%s]\n",
 				readRsp.Record.Offset,
 				readRsp.Record.Value,
 			)
 		}
 	}
 
-	// 读取日志时给定的下标超出范围返回错误
+	// 读取时给定的下标超出范围报错
 	fmt.Println("-------- Read Error --------")
 	_, err = client.Read(ctx, &api.ReadRequest{Offset: 0})
+	if err == nil {
+		log.Fatalf("unexpected result: error should be non-nil\n")
+	}
 	fmt.Printf("failed to read: %v\n", err)
 	_, err = client.Read(ctx, &api.ReadRequest{Offset: uint64(len(records) + 1)})
+	if err == nil {
+		log.Fatalf("unexpected result: error should be non-nil\n")
+	}
 	fmt.Printf("failed to read: %v\n", err)
 
 	// 清空所有日志
@@ -100,5 +109,10 @@ func main() {
 	// 再次读取第一条日志时报错
 	fmt.Println("----- Read After Reset -----")
 	_, err = client.Read(ctx, &api.ReadRequest{Offset: 1})
+	if err == nil {
+		log.Fatalf("unexpected result: error should be non-nil\n")
+	}
 	fmt.Printf("failed to read after reset: %v\n", err)
+
+	fmt.Println("PASS")
 }

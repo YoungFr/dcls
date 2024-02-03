@@ -1,6 +1,7 @@
 package log
 
 import (
+	"fmt"
 	"os"
 	"sort"
 	"strconv"
@@ -8,6 +9,8 @@ import (
 	"sync"
 
 	api "github.com/youngfr/dcls/api/v1"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type Log struct {
@@ -150,7 +153,10 @@ func (l *Log) Read(absOff uint64) (record *api.Record, err error) {
 	}
 
 	if s == nil || s.nextAbsOffset <= absOff {
-		return nil, api.ErrOffsetOutOfRange{Offset: absOff}
+		return nil, status.Error(
+			codes.InvalidArgument,
+			fmt.Sprintf("offset out of range: %d", absOff),
+		)
 	}
 
 	return s.Read(absOff)
@@ -179,7 +185,9 @@ func (l *Log) Reset() error {
 		return err
 	}
 	for _, file := range files {
-		if err := os.Remove(l.Dir + "/" + file.Name()); err != nil {
+		if err := os.Remove(
+			l.Dir + string(os.PathSeparator) + file.Name(),
+		); err != nil {
 			return err
 		}
 	}

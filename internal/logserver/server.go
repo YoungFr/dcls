@@ -92,7 +92,6 @@ func (s *gRPCServer) Read(ctx context.Context, req *api.ReadRequest) (*api.ReadR
 func (s *gRPCServer) Reset(ctx context.Context, req *api.ResetRequest) (*api.ResetResponse, error) {
 	if err := s.CommitLog.Reset(); err != nil {
 		return &api.ResetResponse{Reply: "Reset FAILED!"}, err
-	} else {
-		return &api.ResetResponse{Reply: "Reset SUCCESS"}, nil
 	}
+	return &api.ResetResponse{Reply: "Reset SUCCESS"}, nil
 }
