@@ -139,11 +139,12 @@ func (i *index) Close() error {
 	if err := i.mmap.Sync(gommap.MS_SYNC); err != nil {
 		return err
 	}
-	if err := i.file.Sync(); err != nil {
+	// 需要将文件的长度截断为其真实写入的字节数
+	// 才能保证下次启动时索引文件的大小是正确的
+	if err := i.file.Truncate(int64(i.size)); err != nil {
 		return err
 	}
-	// 这里需要将文件的长度截断为其真实写入的字节数
-	if err := i.file.Truncate(int64(i.size)); err != nil {
+	if err := i.file.Sync(); err != nil {
 		return err
 	}
 	if err := i.file.Close(); err != nil {

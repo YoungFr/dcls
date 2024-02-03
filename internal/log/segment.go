@@ -72,7 +72,7 @@ func newSegment(dir string, baseAbsOffset uint64, c Config) (s *segment, err err
 func (s *segment) Append(record *api.Record) (absOff uint64, err error) {
 	// 只有在 index 还有空间时才会向存储文件和索引文件中写入内容
 	if !s.index.HasSpace() {
-		return 0, errNotEnoughIndexSpace
+		return s.nextAbsOffset - 1, errNotEnoughIndexSpace
 	}
 
 	// 新写入的记录的绝对下标

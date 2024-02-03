@@ -58,9 +58,12 @@ func (l *Log) setup() error {
 		// 在服务启动时，我们要根据这些下标来创建对应的 segment 对象
 		// 因为每个绝对下标都有对应的 .store 和 .index 文件
 		// 所以只需要从所有 .store(或.index) 文件中提取数字
-		baseAbsOffset, _ := strconv.ParseUint(
-			strings.TrimSuffix(file.Name(), ".store"), 10, 0)
-		baseAbsOffsets = append(baseAbsOffsets, baseAbsOffset)
+		// 我们这里从所有 .store 文件中提取
+		if strings.Contains(file.Name(), ".store") {
+			baseAbsOffset, _ := strconv.ParseUint(
+				strings.TrimSuffix(file.Name(), ".store"), 10, 0)
+			baseAbsOffsets = append(baseAbsOffsets, baseAbsOffset)
+		}
 	}
 
 	// 较小的下标对应较老的记录而较大的下标对应较新的记录
@@ -169,8 +172,20 @@ func (l *Log) Reset() error {
 	if err := l.Close(); err != nil {
 		return err
 	}
-	if err := os.RemoveAll(l.Dir); err != nil {
+
+	// 删除日志存储目录中下所有文件
+	files, err := os.ReadDir(l.Dir)
+	if err != nil {
 		return err
 	}
+	for _, file := range files {
+		if err := os.Remove(l.Dir + "/" + file.Name()); err != nil {
+			return err
+		}
+	}
+
+	l.segments = make([]*segment, 0)
+	l.activeSegment = nil
+
 	return l.setup()
 }

@@ -1,4 +1,4 @@
-package tlsconfig
+package tlscfg
 
 import (
 	"crypto/tls"

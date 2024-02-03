@@ -7,10 +7,10 @@ option go_package = "github.com/youngfr/api/log_v1";
 // service
 service Log {
     // 追加一条日志
-    rpc Produce(ProduceRequest) returns (ProduceResponse) {}
+    rpc Append(AppendRequest) returns (AppendResponse) {}
 
     // 读取一条日志
-    rpc Consume(ConsumeRequest) returns (ConsumeResponse) {}
+    rpc Read(ReadRequest) returns (ReadResponse) {}
 
     // 删除所有日志
     rpc Reset(ResetRequest) returns (ResetResponse) {}
@@ -21,19 +21,19 @@ message Record {
     uint64 offset = 2;
 }
 
-message ProduceRequest  {
+message AppendRequest  {
     Record record = 1;
 }
 
-message ProduceResponse  {
+message AppendResponse  {
     uint64 offset = 1;
 }
 
-message ConsumeRequest {
+message ReadRequest {
     uint64 offset = 1;
 }
 
-message ConsumeResponse {
+message ReadResponse {
     Record record = 1;
 }
 
@@ -42,5 +42,5 @@ message ResetRequest {
 }
 
 message ResetResponse {
-    string ans = 1;
+    string reply = 1;
 }

@@ -19,9 +19,9 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Log_Produce_FullMethodName = "/log.v1.Log/Produce"
-	Log_Consume_FullMethodName = "/log.v1.Log/Consume"
-	Log_Reset_FullMethodName   = "/log.v1.Log/Reset"
+	Log_Append_FullMethodName = "/log.v1.Log/Append"
+	Log_Read_FullMethodName   = "/log.v1.Log/Read"
+	Log_Reset_FullMethodName  = "/log.v1.Log/Reset"
 )
 
 // LogClient is the client API for Log service.
@@ -29,9 +29,9 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type LogClient interface {
 	// 追加一条日志
-	Produce(ctx context.Context, in *ProduceRequest, opts ...grpc.CallOption) (*ProduceResponse, error)
+	Append(ctx context.Context, in *AppendRequest, opts ...grpc.CallOption) (*AppendResponse, error)
 	// 读取一条日志
-	Consume(ctx context.Context, in *ConsumeRequest, opts ...grpc.CallOption) (*ConsumeResponse, error)
+	Read(ctx context.Context, in *ReadRequest, opts ...grpc.CallOption) (*ReadResponse, error)
 	// 删除所有日志
 	Reset(ctx context.Context, in *ResetRequest, opts ...grpc.CallOption) (*ResetResponse, error)
 }
@@ -44,18 +44,18 @@ func NewLogClient(cc grpc.ClientConnInterface) LogClient {
 	return &logClient{cc}
 }
 
-func (c *logClient) Produce(ctx context.Context, in *ProduceRequest, opts ...grpc.CallOption) (*ProduceResponse, error) {
-	out := new(ProduceResponse)
-	err := c.cc.Invoke(ctx, Log_Produce_FullMethodName, in, out, opts...)
+func (c *logClient) Append(ctx context.Context, in *AppendRequest, opts ...grpc.CallOption) (*AppendResponse, error) {
+	out := new(AppendResponse)
+	err := c.cc.Invoke(ctx, Log_Append_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *logClient) Consume(ctx context.Context, in *ConsumeRequest, opts ...grpc.CallOption) (*ConsumeResponse, error) {
-	out := new(ConsumeResponse)
-	err := c.cc.Invoke(ctx, Log_Consume_FullMethodName, in, out, opts...)
+func (c *logClient) Read(ctx context.Context, in *ReadRequest, opts ...grpc.CallOption) (*ReadResponse, error) {
+	out := new(ReadResponse)
+	err := c.cc.Invoke(ctx, Log_Read_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -76,9 +76,9 @@ func (c *logClient) Reset(ctx context.Context, in *ResetRequest, opts ...grpc.Ca
 // for forward compatibility
 type LogServer interface {
 	// 追加一条日志
-	Produce(context.Context, *ProduceRequest) (*ProduceResponse, error)
+	Append(context.Context, *AppendRequest) (*AppendResponse, error)
 	// 读取一条日志
-	Consume(context.Context, *ConsumeRequest) (*ConsumeResponse, error)
+	Read(context.Context, *ReadRequest) (*ReadResponse, error)
 	// 删除所有日志
 	Reset(context.Context, *ResetRequest) (*ResetResponse, error)
 	mustEmbedUnimplementedLogServer()
@@ -88,11 +88,11 @@ type LogServer interface {
 type UnimplementedLogServer struct {
 }
 
-func (UnimplementedLogServer) Produce(context.Context, *ProduceRequest) (*ProduceResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Produce not implemented")
+func (UnimplementedLogServer) Append(context.Context, *AppendRequest) (*AppendResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Append not implemented")
 }
-func (UnimplementedLogServer) Consume(context.Context, *ConsumeRequest) (*ConsumeResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Consume not implemented")
+func (UnimplementedLogServer) Read(context.Context, *ReadRequest) (*ReadResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Read not implemented")
 }
 func (UnimplementedLogServer) Reset(context.Context, *ResetRequest) (*ResetResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Reset not implemented")
@@ -110,38 +110,38 @@ func RegisterLogServer(s grpc.ServiceRegistrar, srv LogServer) {
 	s.RegisterService(&Log_ServiceDesc, srv)
 }
 
-func _Log_Produce_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ProduceRequest)
+func _Log_Append_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AppendRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(LogServer).Produce(ctx, in)
+		return srv.(LogServer).Append(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Log_Produce_FullMethodName,
+		FullMethod: Log_Append_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LogServer).Produce(ctx, req.(*ProduceRequest))
+		return srv.(LogServer).Append(ctx, req.(*AppendRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Log_Consume_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ConsumeRequest)
+func _Log_Read_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReadRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(LogServer).Consume(ctx, in)
+		return srv.(LogServer).Read(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Log_Consume_FullMethodName,
+		FullMethod: Log_Read_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LogServer).Consume(ctx, req.(*ConsumeRequest))
+		return srv.(LogServer).Read(ctx, req.(*ReadRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -172,12 +172,12 @@ var Log_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*LogServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Produce",
-			Handler:    _Log_Produce_Handler,
+			MethodName: "Append",
+			Handler:    _Log_Append_Handler,
 		},
 		{
-			MethodName: "Consume",
-			Handler:    _Log_Consume_Handler,
+			MethodName: "Read",
+			Handler:    _Log_Read_Handler,
 		},
 		{
 			MethodName: "Reset",

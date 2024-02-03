@@ -39,16 +39,17 @@ type LogImplConfig struct {
 // 根据实际使用的日志存储结构和服务器选项创建 gRPC 服务器
 func NewgRPCServer(c *LogImplConfig, opts ...grpc.ServerOption) (*grpc.Server, error) {
 	// 创建 gRPC 服务器的 3 个标准步骤
-	// 1
+
+	// 1. 调用 grpc.NewServer 方法
 	s := grpc.NewServer(opts...)
 
-	// 2
+	// 2. 创建自己的服务器
 	srv, err := newgRPCServer(c)
 	if err != nil {
 		return nil, err
 	}
 
-	// 3
+	// 3. 调用 PeotoBuf 自动生成的注册方法
 	api.RegisterLogServer(s, srv)
 
 	return s, nil
@@ -70,28 +71,28 @@ type gRPCServer struct {
 }
 
 // 追加一条日志
-func (s *gRPCServer) Produce(ctx context.Context, req *api.ProduceRequest) (*api.ProduceResponse, error) {
+func (s *gRPCServer) Append(ctx context.Context, req *api.AppendRequest) (*api.AppendResponse, error) {
 	absOff, err := s.CommitLog.Append(req.Record)
 	if err != nil {
 		return nil, err
 	}
-	return &api.ProduceResponse{Offset: absOff}, nil
+	return &api.AppendResponse{Offset: absOff}, nil
 }
 
 // 读取一条日志
-func (s *gRPCServer) Consume(ctx context.Context, req *api.ConsumeRequest) (*api.ConsumeResponse, error) {
+func (s *gRPCServer) Read(ctx context.Context, req *api.ReadRequest) (*api.ReadResponse, error) {
 	record, err := s.CommitLog.Read(req.Offset)
 	if err != nil {
 		return nil, err
 	}
-	return &api.ConsumeResponse{Record: record}, nil
+	return &api.ReadResponse{Record: record}, nil
 }
 
 // 删除所有日志
 func (s *gRPCServer) Reset(ctx context.Context, req *api.ResetRequest) (*api.ResetResponse, error) {
 	if err := s.CommitLog.Reset(); err != nil {
-		return &api.ResetResponse{Ans: "Reset FAILED"}, err
+		return &api.ResetResponse{Reply: "Reset FAILED!"}, err
 	} else {
-		return &api.ResetResponse{Ans: "Reset SUCCESS"}, nil
+		return &api.ResetResponse{Reply: "Reset SUCCESS"}, nil
 	}
 }
