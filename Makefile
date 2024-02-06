@@ -6,8 +6,13 @@ CONFIG_PATH=${HOME}/.dcls/
 init:
 	rm  -rf  ${CONFIG_PATH}
 	mkdir -p ${CONFIG_PATH}
+	cp certscfg/model.conf certscfg/policy.csv ${CONFIG_PATH}
 
-# 根证书, 服务端证书, 客户端证书
+# 根证书
+# 服务端证书
+# 超级用户 (root user) 的客户端证书
+# 普通用户 (ordinary user) 的客户端证书
+# 只读用户 (read-only use) 的客户端证书
 .PHONY: gencert
 gencert:
 	cfssl gencert -initca certscfg/ca-csr.json | cfssljson -bare ca
@@ -24,7 +29,24 @@ gencert:
 		-ca-key=ca-key.pem \
 		-config=certscfg/ca-config.json \
 		-profile=client \
-		certscfg/client-csr.json | cfssljson -bare client
+		-cn="root" \
+		certscfg/client-csr.json | cfssljson -bare root-client
+
+	cfssl gencert \
+		-ca=ca.pem \
+		-ca-key=ca-key.pem \
+		-config=certscfg/ca-config.json \
+		-profile=client \
+		-cn="ordinary" \
+		certscfg/client-csr.json | cfssljson -bare ordinary-client
+
+	cfssl gencert \
+		-ca=ca.pem \
+		-ca-key=ca-key.pem \
+		-config=certscfg/ca-config.json \
+		-profile=client \
+		-cn="readonly" \
+		certscfg/client-csr.json | cfssljson -bare readonly-client
 	
 	mv *.pem *.csr ${CONFIG_PATH}
 

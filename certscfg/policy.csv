@@ -1,0 +1,6 @@
+p, root, *, append
+p, root, *, read
+p, root, *, reset
+p, ordinary, *, append
+p, ordinary, *, read
+p, readonly, *, read
