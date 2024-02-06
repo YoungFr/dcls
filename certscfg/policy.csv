@@ -1,6 +1,6 @@
-p, root, *, append
-p, root, *, read
-p, root, *, reset
-p, ordinary, *, append
-p, ordinary, *, read
-p, readonly, *, read
+p, root user, all logs, append
+p, root user, all logs, read
+p, root user, all logs, reset
+p, ordinary user, all logs, append
+p, ordinary user, all logs, read
+p, readonly user, all logs, read

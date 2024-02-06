@@ -1,13 +1,14 @@
-package tlscfg
+package auth
 
 import (
 	"os"
 	"path/filepath"
 )
 
-// 证书和私钥的绝对路径名
-// 后续创建服务器和客户端时会使用这些路径下的证书和私钥
 var (
+	// 证书和私钥的绝对路径名
+
+	// CA
 	CAFile = configFile("ca.pem")
 
 	// 服务端
@@ -26,7 +27,7 @@ var (
 	ReadOnlyClientCertFile = configFile("readonly-client.pem")
 	ReadOnlyClientKeyFile  = configFile("readonly-client-key.pem")
 
-	// 配置和策略文件
+	// 授权时使用的配置和策略文件
 	ACLModelFile  = configFile("model.conf")
 	ACLPolicyFile = configFile("policy.csv")
 )

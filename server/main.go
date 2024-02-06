@@ -10,7 +10,6 @@ import (
 	"github.com/youngfr/dcls/internal/auth"
 	dclslog "github.com/youngfr/dcls/internal/log"
 	"github.com/youngfr/dcls/internal/logserver"
-	"github.com/youngfr/dcls/internal/tlscfg"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
@@ -35,12 +34,12 @@ func main() {
 		log.Fatalf("failed to create Log object: %v\n", err)
 	}
 
-	serverTLSConfig, err := tlscfg.SetupTLSConfig(tlscfg.TLSConfig{
+	serverTLSConfig, err := auth.SetupTLSConfig(auth.TLSConfig{
 		IsServerConfig:  true,
 		EnableMutualTLS: true,
-		CertFile:        tlscfg.ServerCertFile,
-		KeyFile:         tlscfg.ServerKeyFile,
-		CAFile:          tlscfg.CAFile,
+		CertFile:        auth.ServerCertFile,
+		KeyFile:         auth.ServerKeyFile,
+		CAFile:          auth.CAFile,
 		ServerName:      lis.Addr().String(),
 	})
 	if err != nil {
@@ -51,7 +50,7 @@ func main() {
 	server, err := logserver.NewgRPCServer(
 		&logserver.LogImplConfig{
 			CommitLog:  clog,
-			Authorizer: auth.New(tlscfg.ACLModelFile, tlscfg.ACLPolicyFile),
+			Authorizer: auth.NewAuthorizer(auth.ACLModelFile, auth.ACLPolicyFile),
 		},
 		grpc.Creds(serverCredentials),
 	)

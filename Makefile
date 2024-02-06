@@ -12,7 +12,7 @@ init:
 # 服务端证书
 # 超级用户 (root user) 的客户端证书
 # 普通用户 (ordinary user) 的客户端证书
-# 只读用户 (read-only use) 的客户端证书
+# 只读用户 (read-only user) 的客户端证书
 .PHONY: gencert
 gencert:
 	cfssl gencert -initca certscfg/ca-csr.json | cfssljson -bare ca
@@ -29,30 +29,30 @@ gencert:
 		-ca-key=ca-key.pem \
 		-config=certscfg/ca-config.json \
 		-profile=client \
-		-cn="root" \
+		-cn="root user" \
 		certscfg/client-csr.json | cfssljson -bare root-client
-
+	
 	cfssl gencert \
 		-ca=ca.pem \
 		-ca-key=ca-key.pem \
 		-config=certscfg/ca-config.json \
 		-profile=client \
-		-cn="ordinary" \
+		-cn="ordinary user" \
 		certscfg/client-csr.json | cfssljson -bare ordinary-client
-
+	
 	cfssl gencert \
 		-ca=ca.pem \
 		-ca-key=ca-key.pem \
 		-config=certscfg/ca-config.json \
 		-profile=client \
-		-cn="readonly" \
+		-cn="readonly user" \
 		certscfg/client-csr.json | cfssljson -bare readonly-client
 	
 	mv *.pem *.csr ${CONFIG_PATH}
 
 .PHONY: test
 test:
-	go test -race ./...
+	go test -race ./tests
 
 # 编译所有 protobuf 文件
 .PHONY: compile

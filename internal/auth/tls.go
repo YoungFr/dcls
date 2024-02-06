@@ -1,4 +1,4 @@
-package tlscfg
+package auth
 
 import (
 	"crypto/tls"

@@ -14,7 +14,6 @@ import (
 	"github.com/youngfr/dcls/internal/auth"
 	dclslog "github.com/youngfr/dcls/internal/log"
 	"github.com/youngfr/dcls/internal/logserver"
-	"github.com/youngfr/dcls/internal/tlscfg"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
@@ -47,12 +46,12 @@ func TestAllOperationsAndAuth(t *testing.T) {
 		require.NoError(t, err)
 
 		// 服务端采取双向 TLS 认证
-		serverTLSConfig, err := tlscfg.SetupTLSConfig(tlscfg.TLSConfig{
+		serverTLSConfig, err := auth.SetupTLSConfig(auth.TLSConfig{
 			IsServerConfig:  true,
 			EnableMutualTLS: true,
-			CertFile:        tlscfg.ServerCertFile,
-			KeyFile:         tlscfg.ServerKeyFile,
-			CAFile:          tlscfg.CAFile,
+			CertFile:        auth.ServerCertFile,
+			KeyFile:         auth.ServerKeyFile,
+			CAFile:          auth.CAFile,
 			ServerName:      lis.Addr().String(),
 		})
 		require.NoError(t, err)
@@ -62,7 +61,7 @@ func TestAllOperationsAndAuth(t *testing.T) {
 		server, err := logserver.NewgRPCServer(
 			&logserver.LogImplConfig{
 				CommitLog:  clog,
-				Authorizer: auth.New(tlscfg.ACLModelFile, tlscfg.ACLPolicyFile),
+				Authorizer: auth.NewAuthorizer(auth.ACLModelFile, auth.ACLPolicyFile),
 			},
 			grpc.Creds(serverCredentials),
 		)
@@ -103,12 +102,12 @@ func TestAllOperationsAndAuth(t *testing.T) {
 		// --------------------------- Root Client ----------------------------
 
 		// 超级用户采取双向 TLS 认证
-		rootClientTLSConfig, err := tlscfg.SetupTLSConfig(tlscfg.TLSConfig{
+		rootClientTLSConfig, err := auth.SetupTLSConfig(auth.TLSConfig{
 			IsServerConfig:  false,
 			EnableMutualTLS: true,
-			CertFile:        tlscfg.RootClientCertFile,
-			KeyFile:         tlscfg.RootClientKeyFile,
-			CAFile:          tlscfg.CAFile,
+			CertFile:        auth.RootClientCertFile,
+			KeyFile:         auth.RootClientKeyFile,
+			CAFile:          auth.CAFile,
 		})
 		require.NoError(t, err)
 		rootClientCredentials := credentials.NewTLS(rootClientTLSConfig)
@@ -177,7 +176,7 @@ func TestAllOperationsAndAuth(t *testing.T) {
 			// 超级用户有清空所有日志的权限
 			resetRsp, err := rootClient.Reset(ctx, &api.ResetRequest{})
 			require.NoError(t, err)
-			require.Equal(t, "Reset SUCCESS", resetRsp.Reply)
+			require.Equal(t, logserver.RESET_SUCC, resetRsp.Reply)
 
 			// 在清空所有日志后再次读取会报错
 			readRsp, err = rootClient.Read(ctx, &api.ReadRequest{Offset: 1})
@@ -190,12 +189,12 @@ func TestAllOperationsAndAuth(t *testing.T) {
 		// ------------------------- Ordinary Client --------------------------
 
 		// 普通用户采取双向 TLS 认证
-		ordinaryClientTLSConfig, err := tlscfg.SetupTLSConfig(tlscfg.TLSConfig{
+		ordinaryClientTLSConfig, err := auth.SetupTLSConfig(auth.TLSConfig{
 			IsServerConfig:  false,
 			EnableMutualTLS: true,
-			CertFile:        tlscfg.OrdinaryClientCertFile,
-			KeyFile:         tlscfg.OrdinaryClientKeyFile,
-			CAFile:          tlscfg.CAFile,
+			CertFile:        auth.OrdinaryClientCertFile,
+			KeyFile:         auth.OrdinaryClientKeyFile,
+			CAFile:          auth.CAFile,
 		})
 		require.NoError(t, err)
 		ordinaryClientCredentials := credentials.NewTLS(ordinaryClientTLSConfig)
@@ -249,12 +248,12 @@ func TestAllOperationsAndAuth(t *testing.T) {
 		// ------------------------- ReadOnly Client --------------------------
 
 		// 只读用户采取双向 TLS 认证
-		readOnlyClientTLSConfig, err := tlscfg.SetupTLSConfig(tlscfg.TLSConfig{
+		readOnlyClientTLSConfig, err := auth.SetupTLSConfig(auth.TLSConfig{
 			IsServerConfig:  false,
 			EnableMutualTLS: true,
-			CertFile:        tlscfg.ReadOnlyClientCertFile,
-			KeyFile:         tlscfg.ReadOnlyClientKeyFile,
-			CAFile:          tlscfg.CAFile,
+			CertFile:        auth.ReadOnlyClientCertFile,
+			KeyFile:         auth.ReadOnlyClientKeyFile,
+			CAFile:          auth.CAFile,
 		})
 		require.NoError(t, err)
 		readOnlyClientCredentials := credentials.NewTLS(readOnlyClientTLSConfig)

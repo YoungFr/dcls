@@ -70,7 +70,7 @@ func newIndex(f *os.File, c Config) (*index, error) {
 	if idx.mmap, err = gommap.Map(
 		f.Fd(),
 		gommap.PROT_READ|gommap.PROT_WRITE,
-		// 共享文件映射 => 内存映射 I/O
+		// 内存映射 I/O 需要使用共享文件映射
 		gommap.MAP_SHARED); err != nil {
 		return nil, err
 	}

@@ -3,6 +3,7 @@ package log
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -175,19 +176,23 @@ func (l *Log) Close() error {
 }
 
 func (l *Log) Reset() error {
-	if err := l.Close(); err != nil {
-		return err
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	for _, segment := range l.segments {
+		if err := segment.Close(); err != nil {
+			return err
+		}
 	}
 
-	// 删除日志存储目录中下所有文件
 	files, err := os.ReadDir(l.Dir)
 	if err != nil {
 		return err
 	}
+
+	// 删除日志存储目录中下所有文件
 	for _, file := range files {
-		if err := os.Remove(
-			l.Dir + string(os.PathSeparator) + file.Name(),
-		); err != nil {
+		if err := os.Remove(filepath.Join(l.Dir, file.Name())); err != nil {
 			return err
 		}
 	}

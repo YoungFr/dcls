@@ -15,12 +15,12 @@ type LogImplConfig struct {
 	Authorizer Authorizer
 }
 
+var _ api.LogServer = (*gRPCServer)(nil)
+
 type gRPCServer struct {
 	*LogImplConfig
 	api.UnimplementedLogServer
 }
-
-var _ api.LogServer = (*gRPCServer)(nil)
 
 func newgRPCServer(c *LogImplConfig) (*gRPCServer, error) {
 	return &gRPCServer{LogImplConfig: c}, nil
@@ -41,7 +41,7 @@ func NewgRPCServer(c *LogImplConfig, opts ...grpc.ServerOption) (*grpc.Server, e
 		return nil, err
 	}
 
-	// 3. 调用 PeotoBuf 自动生成的注册方法
+	// 3. 调用 ProtoBuf 自动生成的注册方法
 	api.RegisterLogServer(s, srv)
 
 	return s, nil
@@ -49,7 +49,7 @@ func NewgRPCServer(c *LogImplConfig, opts ...grpc.ServerOption) (*grpc.Server, e
 
 func (s *gRPCServer) Read(ctx context.Context, req *api.ReadRequest) (*api.ReadResponse, error) {
 	// 超级用户、普通用户和只读用户都可以读取日志
-	if err := s.Authorizer.Authorize(subject(ctx), objectWildcard, readAction); err != nil {
+	if err := s.Authorizer.Authorize(subject(ctx), objects, readAction); err != nil {
 		return nil, err
 	}
 	record, err := s.CommitLog.Read(req.Offset)
@@ -61,7 +61,7 @@ func (s *gRPCServer) Read(ctx context.Context, req *api.ReadRequest) (*api.ReadR
 
 func (s *gRPCServer) Append(ctx context.Context, req *api.AppendRequest) (*api.AppendResponse, error) {
 	// 超级用户和普通用户可以追加日志
-	if err := s.Authorizer.Authorize(subject(ctx), objectWildcard, appendAction); err != nil {
+	if err := s.Authorizer.Authorize(subject(ctx), objects, appendAction); err != nil {
 		return nil, err
 	}
 	absOff, err := s.CommitLog.Append(req.Record)
@@ -71,13 +71,18 @@ func (s *gRPCServer) Append(ctx context.Context, req *api.AppendRequest) (*api.A
 	return &api.AppendResponse{Offset: absOff}, nil
 }
 
+const (
+	RESET_SUCC = "Reset SUCCESS"
+	RESET_FAIL = "Reset FAILED"
+)
+
 func (s *gRPCServer) Reset(ctx context.Context, req *api.ResetRequest) (*api.ResetResponse, error) {
 	// 只有超级用户可以删除所有日志
-	if err := s.Authorizer.Authorize(subject(ctx), objectWildcard, resetAction); err != nil {
+	if err := s.Authorizer.Authorize(subject(ctx), objects, resetAction); err != nil {
 		return nil, err
 	}
 	if err := s.CommitLog.Reset(); err != nil {
-		return &api.ResetResponse{Reply: "Reset FAILED!"}, err
+		return &api.ResetResponse{Reply: RESET_FAIL}, err
 	}
-	return &api.ResetResponse{Reply: "Reset SUCCESS"}, nil
+	return &api.ResetResponse{Reply: RESET_SUCC}, nil
 }

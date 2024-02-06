@@ -22,10 +22,10 @@ var _ Authorizer = (*auth.Authorizer)(nil)
 
 // actions
 const (
-	objectWildcard = "*"
-	appendAction   = "append"
-	readAction     = "read"
-	resetAction    = "reset"
+	objects      = "all logs"
+	appendAction = "append"
+	readAction   = "read"
+	resetAction  = "reset"
 )
 
 func authenticate(ctx context.Context) (context.Context, error) {

@@ -6,18 +6,18 @@ import (
 	"log"
 
 	api "github.com/youngfr/dcls/api/v1"
-	"github.com/youngfr/dcls/internal/tlscfg"
+	"github.com/youngfr/dcls/internal/auth"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
 
 func main() {
-	rootClientTLSConfig, err := tlscfg.SetupTLSConfig(tlscfg.TLSConfig{
+	rootClientTLSConfig, err := auth.SetupTLSConfig(auth.TLSConfig{
 		IsServerConfig:  false,
 		EnableMutualTLS: true,
-		CertFile:        tlscfg.RootClientCertFile,
-		KeyFile:         tlscfg.RootClientKeyFile,
-		CAFile:          tlscfg.CAFile,
+		CertFile:        auth.RootClientCertFile,
+		KeyFile:         auth.RootClientKeyFile,
+		CAFile:          auth.CAFile,
 	})
 	if err != nil {
 		log.Fatalf("failed to setup root client mTLS: %v\n", err)
@@ -43,11 +43,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("append failed: %v\n", err)
 	}
-	fmt.Printf("the offset of new appended log is %d\n", appendRsp.Offset)
+	fmt.Printf("new appended log offset: %d\n", appendRsp.Offset)
 
 	readRsp, err := rootClient.Read(ctx, &api.ReadRequest{Offset: uint64(0)})
 	if err != nil {
 		log.Fatalf("read failed: %v\n", err)
 	}
-	fmt.Printf("log contents: %s\n", readRsp.Record.Value)
+	fmt.Printf("LOGS[%d] contents: %s\n", 0, readRsp.Record.Value)
 }

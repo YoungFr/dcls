@@ -4,12 +4,9 @@ import (
 	"bufio"
 	"encoding/binary"
 	"os"
-	"sync"
 )
 
 type store struct {
-	mu sync.Mutex
-
 	// 存储日志记录的文件
 	*os.File
 
@@ -50,9 +47,6 @@ const lenSize = 8 // sizeof(uint64)
 // 返回值 n 表示实际写入的字节数
 // 返回值 pos 表示该条记录是从文件的第几个字节开始存储的
 func (s *store) Append(b []byte) (n uint64, pos uint64, err error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	// 只支持追加写入
 	// 所以新写入记录的起始索引就是写入前文件的大小
 	pos = s.size
@@ -76,9 +70,6 @@ func (s *store) Append(b []byte) (n uint64, pos uint64, err error) {
 
 // 读出从文件的第 pos 个字节开始的那条记录
 func (s *store) Read(pos uint64) ([]byte, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	// 首先保证将缓冲区中的内容写到文件中
 	if err := s.buf.Flush(); err != nil {
 		return nil, err
@@ -101,8 +92,6 @@ func (s *store) Read(pos uint64) ([]byte, error) {
 
 // 将存储的日志写入磁盘并关闭相应的文件
 func (s *store) Close() error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
 	if err := s.buf.Flush(); err != nil {
 		return err
 	}
