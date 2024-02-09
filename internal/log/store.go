@@ -11,6 +11,8 @@ type store struct {
 	*os.File
 
 	// 写缓冲区
+	// 使用缓冲 I/O 而不是直接写到文件中
+	// 可以减少系统调用的次数从而提高性能
 	buf *bufio.Writer
 
 	// 文件大小
@@ -22,15 +24,10 @@ func newStore(f *os.File) (*store, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	// 获取文件当前的大小，单位是字节
-	size := uint64(finfo.Size())
-
 	return &store{
 		File: f,
-		// 缓冲区的默认大小是 4096 字节
 		buf:  bufio.NewWriter(f),
-		size: size,
+		size: uint64(finfo.Size()),
 	}, nil
 }
 
@@ -51,11 +48,10 @@ func (s *store) Append(b []byte) (n uint64, pos uint64, err error) {
 	// 所以新写入记录的起始索引就是写入前文件的大小
 	pos = s.size
 
-	// 使用缓冲 I/O 而不是直接写到文件中
-	// 可以减少系统调用的次数从而提高性能
 	if err := binary.Write(s.buf, order, uint64(len(b))); err != nil {
 		return 0, 0, err
 	}
+	
 	w, err := s.buf.Write(b)
 	if err != nil {
 		return 0, 0, err

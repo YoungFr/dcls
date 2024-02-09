@@ -33,7 +33,7 @@ const (
 	posSize = 8 // sizeof(uint64)
 
 	// 一个索引项包括记录的相对下标和记录在文件中的起始位置
-	entrySize = relOffSize + posSize
+	entrySize = relOffSize + posSize // 12
 )
 
 type index struct {
@@ -60,18 +60,15 @@ func newIndex(f *os.File, c Config) (*index, error) {
 
 	// 因为一旦内存映射完成，其大小就不能再更改
 	// 所以在映射前需要先将文件的大小截断为 MaxIndexBytes 个字节
-	if err = os.Truncate(
-		f.Name(),
-		int64(c.Segment.MaxIndexBytes)); err != nil {
+	if err = os.Truncate(f.Name(), int64(c.Segment.MaxIndexBytes)); err != nil {
 		return nil, err
 	}
 
-	// 进行内存映射
 	if idx.mmap, err = gommap.Map(
-		f.Fd(),
-		gommap.PROT_READ|gommap.PROT_WRITE,
-		// 内存映射 I/O 需要使用共享文件映射
-		gommap.MAP_SHARED); err != nil {
+		f.Fd(),                             // 文件描述符
+		gommap.PROT_READ|gommap.PROT_WRITE, // 内存映射内容可读写
+		gommap.MAP_SHARED,                  // 进行内存映射 I/O 时需要使用共享映射
+	); err != nil {
 		return nil, err
 	}
 
@@ -111,8 +108,8 @@ func (i *index) Read(relOffInput int64) (relOffOutput uint32, pos uint64, err er
 	} else {
 		relOffOutput = uint32(relOffInput)
 	}
-	entryBeginIndex := relOffOutput * entrySize
 
+	entryBeginIndex := relOffOutput * entrySize
 	pos = order.Uint64(i.mmap[entryBeginIndex+relOffSize : entryBeginIndex+entrySize])
 
 	return relOffOutput, pos, nil

@@ -18,8 +18,8 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
-func TestAllOperationsAndAuth(t *testing.T) {
-	t.Run("operations and auth test", func(t *testing.T) {
+func TestAuthenticationAndAuthorization(t *testing.T) {
+	t.Run("authentication and authorization test", func(t *testing.T) {
 		// ------------------------------ Server ------------------------------
 
 		// 服务端在 8080 端口开启监听
