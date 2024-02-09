@@ -40,7 +40,6 @@ const lenSize = 8 // sizeof(uint64)
 // 将一条记录追加写入文件的末尾
 // 写入时会先写入记录的长度再写入记录的内容
 // 这样在后续读取时就能知道应该读出多少字节
-//
 // 返回值 n 表示实际写入的字节数
 // 返回值 pos 表示该条记录是从文件的第几个字节开始存储的
 func (s *store) Append(b []byte) (n uint64, pos uint64, err error) {
@@ -51,7 +50,7 @@ func (s *store) Append(b []byte) (n uint64, pos uint64, err error) {
 	if err := binary.Write(s.buf, order, uint64(len(b))); err != nil {
 		return 0, 0, err
 	}
-	
+
 	w, err := s.buf.Write(b)
 	if err != nil {
 		return 0, 0, err

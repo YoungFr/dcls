@@ -20,6 +20,7 @@ type Log struct {
 	Config Config
 
 	// 保护 segments 和 activeSegment 对象
+	// 在并发读取时使用共享锁提高效率
 	mu sync.RWMutex
 
 	// 从前往后按时间顺序排序的所有 segment 对象
@@ -64,8 +65,11 @@ func (l *Log) setup() error {
 		// 所以只需要从所有 .store(或.index) 文件中提取数字
 		// 我们这里从所有 .store 文件中提取
 		if strings.Contains(file.Name(), ".store") {
-			baseAbsOffset, _ := strconv.ParseUint(
+			baseAbsOffset, err := strconv.ParseUint(
 				strings.TrimSuffix(file.Name(), ".store"), 10, 0)
+			if err != nil {
+				return err
+			}
 			baseAbsOffsets = append(baseAbsOffsets, baseAbsOffset)
 		}
 	}
@@ -107,29 +111,26 @@ func (l *Log) Append(record *api.Record) (absOff uint64, err error) {
 
 	absOff, err = l.activeSegment.Append(record)
 	if err != nil {
-		if err != errNotEnoughIndexSpace {
+		if err != errNotEnoughSegmentSpace {
+			// 非空且非空间不足错误表明追加失败
 			return 0, err
 		} else {
-			// 索引文件空间不足
-			// 在 (*segment).Append 方法中已经对这种情况提前做了判断
-			// 此时需要新建一个 segment 来进行写入
+			// 日志或索引文件空间不足需要新建一个 segment 来进行写入
 			err = l.newSegment(absOff + 1)
 			if err != nil {
 				return 0, err
 			}
 
 			absOff, err = l.activeSegment.Append(record)
-			// 在新建的 segment 中调用 Append 不会发生 errNotEnoughIndexSpace 错误
-			// 此时 err 不为空表示写入失败了
+
+			// 新建 segment 后如果又发生非空错误表明追加失败
 			if err != nil {
 				return 0, err
 			}
 		}
 	} else {
-		// 错误为 nil 但是 segment 的 store(或index) 达到了最大值
-		// 需要以 offset+1 为 baseAbsOffset 新建一个 segment 对象
-		// 以保证下次写入时能写入正确的 segment 中
-		//
+		// 错误为空但是 segment 的日志或索引文件恰好在追加后达到了最大值
+		// 以 offset+1 为 baseAbsOffset 新建一个 segment 对象方便下次写入
 		// 注意：在这里无论新建 segment 是否成功都需要返回 absOff 而不是零
 		// 因为我们在旧的 segment 中已经成功添加了记录和索引
 		if l.activeSegment.IsMaxed() {
@@ -153,7 +154,7 @@ func (l *Log) Read(absOff uint64) (record *api.Record, err error) {
 		}
 	}
 
-	if s == nil || s.nextAbsOffset <= absOff {
+	if s == nil || absOff >= s.nextAbsOffset {
 		return nil, status.Error(
 			codes.InvalidArgument,
 			fmt.Sprintf("offset out of range: %d", absOff),

@@ -51,14 +51,14 @@ type index struct {
 func newIndex(f *os.File, c Config) (*index, error) {
 	idx := &index{file: f}
 
-	// 获取文件的初始大小
+	// 文件的初始大小
 	finfo, err := os.Stat(f.Name())
 	if err != nil {
 		return nil, err
 	}
 	idx.size = uint64(finfo.Size())
 
-	// 因为一旦内存映射完成，其大小就不能再更改
+	// 因为一旦内存映射完成其大小就不能再更改
 	// 所以在映射前需要先将文件的大小截断为 MaxIndexBytes 个字节
 	if err = os.Truncate(f.Name(), int64(c.Segment.MaxIndexBytes)); err != nil {
 		return nil, err
@@ -115,17 +115,7 @@ func (i *index) Read(relOffInput int64) (relOffOutput uint32, pos uint64, err er
 	return relOffOutput, pos, nil
 }
 
-// 判断 index 是否还有空间存储一个新的索引项
-func (i *index) HasSpace() bool {
-	return i.size+entrySize <= uint64(len(i.mmap))
-}
-
-var errNotEnoughIndexSpace = errors.New("index space is not enough to put new entry")
-
 func (i *index) Write(relOff uint32, pos uint64) error {
-	if !i.HasSpace() {
-		return errNotEnoughIndexSpace
-	}
 	order.PutUint32(i.mmap[i.size:i.size+relOffSize], relOff)
 	order.PutUint64(i.mmap[i.size+relOffSize:i.size+entrySize], pos)
 	i.size += entrySize

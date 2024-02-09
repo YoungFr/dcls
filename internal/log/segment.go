@@ -1,6 +1,7 @@
 package log
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -29,7 +30,7 @@ func newSegment(dir string, baseAbsOffset uint64, c Config) (s *segment, err err
 		config:        c,
 	}
 
-	// 创建存储文件
+	// 打开（创建）存储文件
 	storeFile, err := os.OpenFile(
 		path.Join(dir, fmt.Sprintf("%d%s", baseAbsOffset, ".store")),
 		os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644,
@@ -42,10 +43,10 @@ func newSegment(dir string, baseAbsOffset uint64, c Config) (s *segment, err err
 		return nil, err
 	}
 
-	// 创建索引文件
+	// 打开（创建）索引文件
 	indexFile, err := os.OpenFile(
 		path.Join(dir, fmt.Sprintf("%d%s", baseAbsOffset, ".index")),
-		os.O_RDWR|os.O_CREATE, 0644,
+		os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644,
 	)
 	if err != nil {
 		return nil, err
@@ -57,9 +58,8 @@ func newSegment(dir string, baseAbsOffset uint64, c Config) (s *segment, err err
 
 	// 设置新建 segment 时 nextAbsOffset 的值
 	// 如果索引文件为空则下一条要存储的记录的绝对下标就是 baseAbsOffset
-	//
 	// 否则下一条要存储的记录的绝对下标是 baseAbsOffset 加上当前的索引项总数
-	// 参考 (*index).Read 方法中的注释
+	// 参见 (*index).Read 方法中的注释使用 Read(-1)获取索引项总数
 	if currMaxRelOff, _, err := s.index.Read(-1); err == errEmptyIndexFile {
 		s.nextAbsOffset = baseAbsOffset
 	} else {
@@ -69,10 +69,14 @@ func newSegment(dir string, baseAbsOffset uint64, c Config) (s *segment, err err
 	return s, nil
 }
 
+var (
+	errNotEnoughSegmentSpace = errors.New("current segment has not enough space to append a new store or index entry")
+)
+
 func (s *segment) Append(record *api.Record) (absOff uint64, err error) {
-	// 只有在 index 还有空间时才会向存储文件和索引文件中写入内容
-	if !s.index.HasSpace() {
-		return s.nextAbsOffset - 1, errNotEnoughIndexSpace
+	if s.store.size+uint64(proto.Size(record)) > s.config.Segment.MaxStoreBytes ||
+		s.index.size+uint64(entrySize) > s.config.Segment.MaxIndexBytes {
+		return s.nextAbsOffset - 1, errNotEnoughSegmentSpace
 	}
 
 	// 新写入的记录的绝对下标
