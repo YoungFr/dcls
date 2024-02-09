@@ -6,7 +6,7 @@ CONFIG_PATH=${HOME}/.dcls/
 init:
 	rm  -rf  ${CONFIG_PATH}
 	mkdir -p ${CONFIG_PATH}
-	cp certscfg/model.conf certscfg/policy.csv ${CONFIG_PATH}
+	cp cfgfiles/authorize/* ${CONFIG_PATH}
 
 # 根证书
 # 服务端证书
@@ -15,38 +15,38 @@ init:
 # 只读用户 (read-only user) 的客户端证书
 .PHONY: gencert
 gencert:
-	cfssl gencert -initca certscfg/ca-csr.json | cfssljson -bare ca
+	cfssl gencert -initca cfgfiles/certs/ca-csr.json | cfssljson -bare ca
 
 	cfssl gencert \
 		-ca=ca.pem \
 		-ca-key=ca-key.pem \
-		-config=certscfg/ca-config.json \
+		-config=cfgfiles/certs/ca-config.json \
 		-profile=server \
-		certscfg/server-csr.json | cfssljson -bare server
+		cfgfiles/certs/server-csr.json | cfssljson -bare server
 	
 	cfssl gencert \
 		-ca=ca.pem \
 		-ca-key=ca-key.pem \
-		-config=certscfg/ca-config.json \
+		-config=cfgfiles/certs/ca-config.json \
 		-profile=client \
 		-cn="root user" \
-		certscfg/client-csr.json | cfssljson -bare root-client
+		cfgfiles/certs/client-csr.json | cfssljson -bare root-client
 	
 	cfssl gencert \
 		-ca=ca.pem \
 		-ca-key=ca-key.pem \
-		-config=certscfg/ca-config.json \
+		-config=cfgfiles/certs/ca-config.json \
 		-profile=client \
 		-cn="ordinary user" \
-		certscfg/client-csr.json | cfssljson -bare ordinary-client
+		cfgfiles/certs/client-csr.json | cfssljson -bare ordinary-client
 	
 	cfssl gencert \
 		-ca=ca.pem \
 		-ca-key=ca-key.pem \
-		-config=certscfg/ca-config.json \
+		-config=cfgfiles/certs/ca-config.json \
 		-profile=client \
 		-cn="readonly user" \
-		certscfg/client-csr.json | cfssljson -bare readonly-client
+		cfgfiles/certs/client-csr.json | cfssljson -bare readonly-client
 	
 	mv *.pem *.csr ${CONFIG_PATH}
 
