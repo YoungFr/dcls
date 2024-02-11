@@ -1,9 +1,14 @@
 package main
 
 import (
+	"bufio"
 	"context"
+	"flag"
 	"fmt"
 	"log"
+	"os"
+	"strconv"
+	"strings"
 
 	api "github.com/youngfr/dcls/api/v1"
 	"github.com/youngfr/dcls/internal/auth"
@@ -11,8 +16,13 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
+var addr = flag.String("addr", "127.0.0.1:8080", "the address to connect to")
+
 func main() {
-	rootClientTLSConfig, err := auth.SetupTLSConfig(auth.TLSConfig{
+	flag.Parse()
+
+	// 双向 TLS 设置
+	clientTLSConfig, err := auth.SetupTLSConfig(auth.TLSConfig{
 		IsServerConfig:  false,
 		EnableMutualTLS: true,
 		CertFile:        auth.RootClientCertFile,
@@ -20,34 +30,64 @@ func main() {
 		CAFile:          auth.CAFile,
 	})
 	if err != nil {
-		log.Fatalf("failed to setup root client mTLS: %v\n", err)
+		log.Fatalf("failed to setup client mTLS: %v\n", err)
 	}
-	rootClientCredentials := credentials.NewTLS(rootClientTLSConfig)
-	rootClientOptions := []grpc.DialOption{
-		grpc.WithTransportCredentials(rootClientCredentials),
+	clientOptions := []grpc.DialOption{
+		grpc.WithTransportCredentials(credentials.NewTLS(clientTLSConfig)),
 	}
 
-	rootConn, err := grpc.Dial("127.0.0.1:8080", rootClientOptions...)
+	conn, err := grpc.Dial(*addr, clientOptions...)
 	if err != nil {
 		log.Fatalf("failed to connect: %v\n", err)
 	}
 
-	rootClient := api.NewLogClient(rootConn)
+	client := api.NewLogClient(conn)
 	ctx := context.Background()
 
-	appendRsp, err := rootClient.Append(ctx, &api.AppendRequest{
-		Record: &api.Record{
-			Value: []byte("my first log"),
-		},
-	})
-	if err != nil {
-		log.Fatalf("append failed: %v\n", err)
+	sc := bufio.NewScanner(os.Stdin)
+	for {
+		fmt.Print("> ")
+		if sc.Scan() {
+			args := strings.Fields(sc.Text())
+			if len(args) <= 2 {
+				switch strings.ToLower(args[0]) {
+				case "append":
+					if appendRsp, err := client.Append(ctx, &api.AppendRequest{
+						Record: &api.Record{
+							Value: []byte(args[1]),
+						},
+					}); err != nil {
+						fmt.Printf("append failed: %v\n", err)
+					} else {
+						fmt.Printf("offset: %d\n", appendRsp.Offset)
+					}
+				case "read":
+					offset, err := strconv.Atoi(args[1])
+					if err != nil {
+						fmt.Printf("parse read offset failed: %v\n", err)
+					} else {
+						if readRsp, err := client.Read(ctx, &api.ReadRequest{
+							Offset: uint64(offset),
+						}); err != nil {
+							fmt.Printf("read failed: %v\n", err)
+						} else {
+							fmt.Printf("%s\n", readRsp.Record.Value)
+						}
+					}
+				case "reset":
+					if resetRsp, err := client.Reset(ctx, &api.ResetRequest{}); err != nil {
+						fmt.Printf("reset failed: %v\n", err)
+					} else {
+						fmt.Printf("%s\n", resetRsp.Reply)
+					}
+				case "q", "quit":
+					return
+				default:
+					fmt.Printf("unknown command\n")
+				}
+			} else {
+				fmt.Printf("too many params: %d\n", len(args))
+			}
+		}
 	}
-	fmt.Printf("new appended log offset: %d\n", appendRsp.Offset)
-
-	readRsp, err := rootClient.Read(ctx, &api.ReadRequest{Offset: uint64(0)})
-	if err != nil {
-		log.Fatalf("read failed: %v\n", err)
-	}
-	fmt.Printf("LOGS[%d] contents: %s\n", 0, readRsp.Record.Value)
 }

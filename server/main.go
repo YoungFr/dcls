@@ -1,6 +1,8 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"log"
 	"net"
 	"os"
@@ -16,24 +18,29 @@ import (
 
 const logStoringDir = "log-services"
 
+var port = flag.Int("port", 8080, "the port to serve on")
+
 func main() {
-	lis, err := net.Listen("tcp", "127.0.0.1:8080")
+	flag.Parse()
+
+	lis, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", *port))
 	if err != nil {
 		log.Fatalf("failed to listen: %v\n", err)
 	}
+	log.Printf("server starting on port %d...\n", *port)
 
-	_, err = os.Stat(logStoringDir)
-	if os.IsNotExist(err) {
-		if err = os.Mkdir(logStoringDir, 0744); err != nil {
+	// 创建存储日志的对象
+	if _, err := os.Stat(logStoringDir); os.IsNotExist(err) {
+		if err := os.Mkdir(logStoringDir, 0744); err != nil {
 			log.Fatalf("failed to create log storing directory: %v\n", err)
 		}
 	}
-
 	clog, err := dclslog.NewLog(logStoringDir, dclslog.Config{})
 	if err != nil {
 		log.Fatalf("failed to create Log object: %v\n", err)
 	}
 
+	// 双向 TLS 设置
 	serverTLSConfig, err := auth.SetupTLSConfig(auth.TLSConfig{
 		IsServerConfig:  true,
 		EnableMutualTLS: true,
@@ -47,6 +54,7 @@ func main() {
 	}
 	serverCredentials := credentials.NewTLS(serverTLSConfig)
 
+	// 创建服务器
 	server, err := logserver.NewgRPCServer(
 		&logserver.LogImplConfig{
 			CommitLog:  clog,
@@ -62,10 +70,11 @@ func main() {
 		log.Fatal(server.Serve(lis))
 	}()
 
+	// 优雅地关闭服务器
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
 	log.Printf("received signal: %v\n", <-ch)
 	clog.Close()
 	server.GracefulStop()
-	log.Println("server shutdown")
+	log.Printf("server shutdown\n")
 }
