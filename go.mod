@@ -14,7 +14,7 @@ require (
 
 require (
 	cloud.google.com/go/compute v1.23.4 // indirect
-	golang.org/x/oauth2 v0.16.0 // indirect
+	golang.org/x/oauth2 v0.17.0 // indirect
 )
 
 require (
